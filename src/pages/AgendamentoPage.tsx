@@ -4,7 +4,7 @@ import type { Produto, Unidade, UserProfile } from '../supabase'
 interface Props {
   produto: Produto
   unidade: Unidade
-  profile: UserProfile
+  profile?: UserProfile
   onVoltar: () => void
   onSucesso: () => void
 }
