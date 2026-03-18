@@ -11,7 +11,7 @@ interface Props {
 
 const HORARIOS = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30']
 
-export default function AgendamentoPage({ produto, unidade, profile, onVoltar, onSucesso }: Props) {
+export default function AgendamentoPage({ produto, unidade, onVoltar, onSucesso }: Props) {
   const [unidadeSel, setUnidadeSel] = useState<'Toledo' | 'Marechal'>(unidade.cidade === 'Toledo' ? 'Toledo' : 'Marechal')
   const [data, setData] = useState('')
   const [horario, setHorario] = useState('')
