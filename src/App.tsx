@@ -113,7 +113,7 @@ export default function App() {
   return (
 <div style={{ fontFamily: "'Montserrat', sans-serif", minHeight: '100vh', width: '100%', background: 'linear-gradient(135deg, #0a2540 0%, #0e3d6b 40%, #1a5f9e 100%)', display: 'flex', alignItems: 'stretch', flexDirection: 'row' }}>
       {/* Lateral esquerda — só desktop */}
-      <div className="desktop-sidebar" style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '32px' }}>
+      <div className="desktop-sidebar" style={{ flex: 1 }} />
         <div style={{ textAlign: 'center' }}>
           <svg width="64" height="64" viewBox="0 0 100 100" fill="none" style={{ marginBottom: '16px' }}>
             <path d="M50 8 L82 33 L67 62 L50 78 L33 62 L18 33 Z" fill="white" opacity="0.95"/>
