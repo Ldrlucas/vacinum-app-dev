@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { supabase } from '../supabase'
 import type { UserProfile } from '../supabase'
 
 interface Props {
@@ -6,44 +7,26 @@ interface Props {
   onLogout: () => void
 }
 
-const AGENDAMENTOS_MOCK = [
-  { id: 1, paciente: 'Maria Silva', produto: 'Febre Amarela', horario: '09:00', unidade: 'Toledo', status: 'confirmado', data: '2026-03-20' },
-  { id: 2, paciente: 'João Oliveira', produto: 'Influenza', horario: '10:30', unidade: 'Marechal', status: 'pendente', data: '2026-03-20' },
-  { id: 3, paciente: 'Ana Costa', produto: 'HPV Nonavalente', horario: '14:00', unidade: 'Toledo', status: 'confirmado', data: '2026-03-21' },
-  { id: 4, paciente: 'Pedro Santos', produto: 'Hepatite B', horario: '15:30', unidade: 'Marechal', status: 'cancelado', data: '2026-03-21' },
-  { id: 5, paciente: 'Lucia Ferreira', produto: 'QDENGA', horario: '08:30', unidade: 'Toledo', status: 'realizado', data: '2026-03-22' },
-  { id: 6, paciente: 'Carlos Mendes', produto: 'Meningo ACWY', horario: '09:30', unidade: 'Toledo', status: 'confirmado', data: '2026-03-22' },
-  { id: 7, paciente: 'Fernanda Lima', produto: 'Herpes Zoster', horario: '11:00', unidade: 'Marechal', status: 'confirmado', data: '2026-03-23' },
-  { id: 8, paciente: 'Roberto Souza', produto: 'Pneumo 20', horario: '14:30', unidade: 'Toledo', status: 'pendente', data: '2026-03-23' },
-]
+interface AgendamentoAdmin {
+  id: number
+  data: string
+  horario: string
+  status: string
+  observacoes: string | null
+  paciente: { nome: string } | null
+  produto: { nome: string; icone: string } | null
+  unidade: { nome: string; cidade: string } | null
+}
 
-const VACINAS_MOCK = [
-  { id: 1, nome: 'Gripe / Influenza', doses: 'Anual', preco: 'A consultar', icone: '🤧', ativo: true, vendas: 24, receita: 1800 },
-  { id: 2, nome: 'Abrysvo (VSR)', doses: 'Dose única', preco: 'A consultar', icone: '🫁', ativo: true, vendas: 8, receita: 1600 },
-  { id: 3, nome: 'Beyfortus (Nirsevimabe)', doses: 'Dose única', preco: 'A consultar', icone: '👶', ativo: true, vendas: 5, receita: 1250 },
-  { id: 4, nome: 'Hexavalente', doses: '3 doses', preco: 'A consultar', icone: '💊', ativo: true, vendas: 12, receita: 2400 },
-  { id: 5, nome: 'Pentavalente', doses: '3 doses', preco: 'A consultar', icone: '🛡️', ativo: true, vendas: 9, receita: 1800 },
-  { id: 6, nome: 'DTPa / DTPa + Pólio', doses: 'Reforço', preco: 'A consultar', icone: '⚡', ativo: true, vendas: 7, receita: 980 },
-  { id: 7, nome: 'Rotavírus Pentavalente', doses: '3 doses', preco: 'A consultar', icone: '🍼', ativo: true, vendas: 6, receita: 840 },
-  { id: 8, nome: 'Meningo B', doses: '2-3 doses', preco: 'A consultar', icone: '🧠', ativo: true, vendas: 11, receita: 2200 },
-  { id: 9, nome: 'Meningo ACWY', doses: 'Dose única', preco: 'A consultar', icone: '🧬', ativo: true, vendas: 8, receita: 1600 },
-  { id: 10, nome: 'Pneumo 15 / Pneumo 20', doses: '1-2 doses', preco: 'A consultar', icone: '🫀', ativo: true, vendas: 14, receita: 2100 },
-  { id: 11, nome: 'QDENGA (Dengue)', doses: '2 doses', preco: 'A consultar', icone: '🦟', ativo: true, vendas: 16, receita: 3200 },
-  { id: 12, nome: 'Herpes Zoster (Shingrix)', doses: '2 doses', preco: 'A consultar', icone: '🔥', ativo: true, vendas: 14, receita: 2800 },
-  { id: 13, nome: 'HPV Nonavalente', doses: '2-3 doses', preco: 'A consultar', icone: '🩺', ativo: true, vendas: 10, receita: 2990 },
-  { id: 14, nome: 'Tríplice Viral (SCR)', doses: '2 doses', preco: 'A consultar', icone: '🦠', ativo: false, vendas: 3, receita: 450 },
-  { id: 15, nome: 'Febre Amarela', doses: 'Dose única', preco: 'A consultar', icone: '🌡️', ativo: true, vendas: 9, receita: 1080 },
-  { id: 16, nome: 'Hepatite A e B', doses: '2-3 doses', preco: 'A consultar', icone: '🫶', ativo: true, vendas: 7, receita: 1260 },
-]
-
-const INJETAVEIS_MOCK = [
-  { id: 101, nome: 'L-Lisina', preco: 'A consultar', icone: '✨', ativo: true, vendas: 8, receita: 640 },
-  { id: 102, nome: 'L-Teanina', preco: 'A consultar', icone: '🧘', ativo: true, vendas: 6, receita: 480 },
-  { id: 103, nome: 'Complexo B', preco: 'A consultar', icone: '⚡', ativo: true, vendas: 12, receita: 960 },
-  { id: 104, nome: 'Pool Cognitivo', preco: 'A consultar', icone: '🧠', ativo: true, vendas: 5, receita: 600 },
-  { id: 105, nome: 'Pill Food', preco: 'A consultar', icone: '💆', ativo: true, vendas: 7, receita: 700 },
-  { id: 106, nome: 'Vitamina B12', preco: 'A consultar', icone: '💪', ativo: true, vendas: 10, receita: 800 },
-]
+interface Produto {
+  id: number
+  nome: string
+  icone: string
+  preco: string
+  doses: string | null
+  tipo: string
+  ativo: boolean
+}
 
 const STATUS_STYLE: Record<string, { label: string; color: string; bg: string }> = {
   confirmado: { label: 'Confirmado', color: '#1565c0', bg: '#e3f2fd' },
@@ -52,46 +35,80 @@ const STATUS_STYLE: Record<string, { label: string; color: string; bg: string }>
   cancelado: { label: 'Cancelado', color: '#c62828', bg: '#ffebee' },
 }
 
-const PIN_CORRETO = '1234'
-
 export default function AdminPanel({ profile, onLogout }: Props) {
   const podeVerFinanceiro = profile.tipo === 'proprietario' || profile.tipo === 'admin'
 
   const [aba, setAba] = useState<'dashboard' | 'agenda' | 'produtos' | 'financeiro'>('dashboard')
-  const [agendamentos, setAgendamentos] = useState(AGENDAMENTOS_MOCK)
-  const [vacinas, setVacinas] = useState(VACINAS_MOCK)
-  const [injetaveis, setInjetaveis] = useState(INJETAVEIS_MOCK)
+  const [agendamentos, setAgendamentos] = useState<AgendamentoAdmin[]>([])
+  const [produtos, setProdutos] = useState<Produto[]>([])
+  const [loadingAg, setLoadingAg] = useState(true)
+  const [loadingProd, setLoadingProd] = useState(true)
   const [tipoProduto, setTipoProduto] = useState<'vacina' | 'injetavel'>('vacina')
   const [editandoId, setEditandoId] = useState<number | null>(null)
   const [precoTemp, setPrecoTemp] = useState('')
+  const [salvando, setSalvando] = useState(false)
   const [pinDesbloqueado, setPinDesbloqueado] = useState(false)
   const [pinInput, setPinInput] = useState('')
   const [pinErro, setPinErro] = useState(false)
   const [periodoFin, setPeriodoFin] = useState<'hoje' | 'mes'>('mes')
 
-  const confirmados = agendamentos.filter(a => a.status === 'confirmado').length
-  const pendentes = agendamentos.filter(a => a.status === 'pendente').length
-  const proximos = agendamentos.filter(a => a.status !== 'cancelado').slice(0, 5)
-  const receitaTotal = 18750
-  const metaTotal = 25000
-  const receitaHoje = 1240
-  const progresso = Math.round((receitaTotal / metaTotal) * 100)
-  const produtosPorReceita = [...vacinas].sort((a, b) => b.receita - a.receita).slice(0, 6)
+  useEffect(() => {
+    carregarAgendamentos()
+    carregarProdutos()
+  }, [])
 
-  function atualizarStatus(id: number, status: string) {
-    setAgendamentos(prev => prev.map(a => a.id === id ? { ...a, status } : a))
+  async function carregarAgendamentos() {
+    setLoadingAg(true)
+    const { data, error } = await supabase
+      .from('agendamentos')
+      .select(`
+        id, data, horario, status, observacoes,
+        paciente:profiles!agendamentos_paciente_id_fkey(nome),
+        produto:produtos!agendamentos_produto_id_fkey(nome, icone),
+        unidade:unidades!agendamentos_unidade_id_fkey(nome, cidade)
+      `)
+      .order('data', { ascending: false })
+    if (!error && data) setAgendamentos(data as any)
+    setLoadingAg(false)
   }
 
-  function salvarPreco(id: number, tipo: 'vacina' | 'injetavel') {
-    if (tipo === 'vacina') setVacinas(prev => prev.map(v => v.id === id ? { ...v, preco: precoTemp } : v))
-    else setInjetaveis(prev => prev.map(i => i.id === id ? { ...i, preco: precoTemp } : i))
-    setEditandoId(null)
+  async function carregarProdutos() {
+    setLoadingProd(true)
+    const { data, error } = await supabase
+      .from('produtos')
+      .select('*')
+      .order('nome')
+    if (!error && data) setProdutos(data)
+    setLoadingProd(false)
+  }
+
+  async function atualizarStatus(id: number, status: string) {
+    setAgendamentos(prev => prev.map(a => a.id === id ? { ...a, status } : a))
+    await supabase.from('agendamentos').update({ status }).eq('id', id)
+  }
+
+  async function salvarPreco(id: number) {
+    setSalvando(true)
+    const { error } = await supabase.from('produtos').update({ preco: precoTemp }).eq('id', id)
+    if (!error) {
+      setProdutos(prev => prev.map(p => p.id === id ? { ...p, preco: precoTemp } : p))
+      setEditandoId(null)
+    }
+    setSalvando(false)
   }
 
   function verificarPin() {
-    if (pinInput === PIN_CORRETO) { setPinDesbloqueado(true); setPinErro(false) }
+    const pinCorreto = profile.pin_financeiro || '1234'
+    if (pinInput === pinCorreto) { setPinDesbloqueado(true); setPinErro(false) }
     else { setPinErro(true); setPinInput('') }
   }
+
+  const pendentes = agendamentos.filter(a => a.status === 'pendente').length
+  const confirmados = agendamentos.filter(a => a.status === 'confirmado').length
+  const hoje = new Date().toISOString().split('T')[0]
+  const agHoje = agendamentos.filter(a => a.data === hoje).length
+  const proximos = agendamentos.filter(a => a.status !== 'cancelado').slice(0, 5)
+  const produtosFiltrados = produtos.filter(p => p.tipo === tipoProduto)
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', emoji: '📊' },
@@ -102,6 +119,7 @@ export default function AdminPanel({ profile, onLogout }: Props) {
 
   return (
     <div style={{ fontFamily: "'Montserrat', sans-serif", minHeight: '100vh', background: '#f0f4f8' }}>
+
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #0e3d6b, #1a5f9e)', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -111,7 +129,7 @@ export default function AdminPanel({ profile, onLogout }: Props) {
           </svg>
           <div>
             <div style={{ color: 'white', fontWeight: 800, fontSize: '15px', letterSpacing: '2px' }}>VACINUM</div>
-            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '9px', letterSpacing: '1.5px' }}>CLÍNICA DE VACINAS</div>
+            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '9px', letterSpacing: '1.5px' }}>PAINEL ADMIN</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -136,64 +154,85 @@ export default function AdminPanel({ profile, onLogout }: Props) {
         {aba === 'dashboard' && (
           <div>
             <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#1a2a3a', marginBottom: '20px' }}>Visão Geral</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
-              {[
-                { label: 'Hoje', value: 8, emoji: '📅', color: '#1a5f9e', bg: '#e8f0fe' },
-                { label: 'Confirmados', value: confirmados, emoji: '✅', color: '#2e7d32', bg: '#e8f5e9' },
-                { label: 'Pendentes', value: pendentes, emoji: '⏳', color: '#e65100', bg: '#fff3e0' },
-                { label: 'Mês', value: 127, emoji: '📈', color: '#6a1b9a', bg: '#f3e5f5' },
-              ].map(s => (
-                <div key={s.label} style={{ background: 'white', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-                  <div style={{ fontSize: '28px', marginBottom: '8px' }}>{s.emoji}</div>
-                  <div style={{ fontSize: '32px', fontWeight: 800, color: s.color, marginBottom: '4px' }}>{s.value}</div>
-                  <div style={{ fontSize: '13px', color: '#888', fontWeight: 600 }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
-            <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1a2a3a', marginBottom: '14px' }}>Próximos Agendamentos</h3>
-            <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
-              {proximos.map((ag, i) => {
-                const st = STATUS_STYLE[ag.status]
-                return (
-                  <div key={ag.id} style={{ display: 'flex', alignItems: 'center', padding: '14px 20px', borderBottom: i < proximos.length - 1 ? '1px solid #f0f4f8' : 'none' }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, color: '#1a2a3a', fontSize: '14px' }}>{ag.paciente}</div>
-                      <div style={{ color: '#888', fontSize: '12px', marginTop: '2px' }}>{ag.produto} · {ag.horario} · {ag.unidade}</div>
+            {loadingAg ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Carregando...</div>
+            ) : (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
+                  {[
+                    { label: 'Hoje', value: agHoje, emoji: '📅', color: '#1a5f9e', bg: '#e8f0fe' },
+                    { label: 'Confirmados', value: confirmados, emoji: '✅', color: '#2e7d32', bg: '#e8f5e9' },
+                    { label: 'Pendentes', value: pendentes, emoji: '⏳', color: '#e65100', bg: '#fff3e0' },
+                    { label: 'Total', value: agendamentos.length, emoji: '📈', color: '#6a1b9a', bg: '#f3e5f5' },
+                  ].map(s => (
+                    <div key={s.label} style={{ background: 'white', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                      <div style={{ fontSize: '28px', marginBottom: '8px' }}>{s.emoji}</div>
+                      <div style={{ fontSize: '32px', fontWeight: 800, color: s.color, marginBottom: '4px' }}>{s.value}</div>
+                      <div style={{ fontSize: '13px', color: '#888', fontWeight: 600 }}>{s.label}</div>
                     </div>
-                    <span style={{ background: st.bg, color: st.color, fontSize: '12px', fontWeight: 700, padding: '4px 10px', borderRadius: '20px' }}>{st.label}</span>
-                  </div>
-                )
-              })}
-            </div>
+                  ))}
+                </div>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1a2a3a', marginBottom: '14px' }}>Próximos Agendamentos</h3>
+                <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+                  {proximos.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Nenhum agendamento ainda</div>
+                  ) : proximos.map((ag, i) => {
+                    const st = STATUS_STYLE[ag.status] || STATUS_STYLE.pendente
+                    return (
+                      <div key={ag.id} style={{ display: 'flex', alignItems: 'center', padding: '14px 20px', borderBottom: i < proximos.length - 1 ? '1px solid #f0f4f8' : 'none' }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 700, color: '#1a2a3a', fontSize: '14px' }}>{ag.paciente?.nome || '—'}</div>
+                          <div style={{ color: '#888', fontSize: '12px', marginTop: '2px' }}>
+                            {ag.produto?.icone} {ag.produto?.nome} · {ag.horario} · {ag.unidade?.cidade}
+                          </div>
+                        </div>
+                        <span style={{ background: st.bg, color: st.color, fontSize: '12px', fontWeight: 700, padding: '4px 10px', borderRadius: '20px' }}>{st.label}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
           </div>
         )}
 
         {/* AGENDA */}
         {aba === 'agenda' && (
           <div>
-            <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#1a2a3a', marginBottom: '20px' }}>Agenda — {agendamentos.length} agendamentos</h2>
-            <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
-              {agendamentos.map((ag, i) => {
-                const st = STATUS_STYLE[ag.status]
-                return (
-                  <div key={ag.id} style={{ display: 'flex', alignItems: 'center', padding: '16px 20px', borderBottom: i < agendamentos.length - 1 ? '1px solid #f0f4f8' : 'none' }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, color: '#1a2a3a', fontSize: '14px' }}>{ag.paciente}</div>
-                      <div style={{ color: '#888', fontSize: '12px', marginTop: '3px' }}>
-                        {ag.produto} · {new Date(ag.data + 'T00:00:00').toLocaleDateString('pt-BR')} {ag.horario} · {ag.unidade}
+            <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#1a2a3a', marginBottom: '20px' }}>
+              Agenda — {agendamentos.length} agendamentos
+            </h2>
+            {loadingAg ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Carregando...</div>
+            ) : agendamentos.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px', color: '#888' }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📅</div>
+                <div style={{ fontWeight: 700 }}>Nenhum agendamento ainda</div>
+              </div>
+            ) : (
+              <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+                {agendamentos.map((ag, i) => {
+                  const st = STATUS_STYLE[ag.status] || STATUS_STYLE.pendente
+                  return (
+                    <div key={ag.id} style={{ display: 'flex', alignItems: 'center', padding: '16px 20px', borderBottom: i < agendamentos.length - 1 ? '1px solid #f0f4f8' : 'none' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 700, color: '#1a2a3a', fontSize: '14px' }}>{ag.paciente?.nome || '—'}</div>
+                        <div style={{ color: '#888', fontSize: '12px', marginTop: '3px' }}>
+                          {ag.produto?.icone} {ag.produto?.nome} · {new Date(ag.data + 'T00:00:00').toLocaleDateString('pt-BR')} {ag.horario} · {ag.unidade?.cidade}
+                        </div>
                       </div>
+                      <select value={ag.status} onChange={e => atualizarStatus(ag.id, e.target.value)}
+                        style={{ fontSize: '12px', fontWeight: 700, padding: '6px 10px', borderRadius: '20px', border: 'none', background: st.bg, color: st.color, fontFamily: "'Montserrat', sans-serif", cursor: 'pointer' }}>
+                        <option value="pendente">Pendente</option>
+                        <option value="confirmado">Confirmado</option>
+                        <option value="realizado">Realizado</option>
+                        <option value="cancelado">Cancelado</option>
+                      </select>
                     </div>
-                    <select value={ag.status} onChange={e => atualizarStatus(ag.id, e.target.value)}
-                      style={{ fontSize: '12px', fontWeight: 700, padding: '6px 10px', borderRadius: '20px', border: 'none', background: st.bg, color: st.color, fontFamily: "'Montserrat', sans-serif", cursor: 'pointer' }}>
-                      <option value="pendente">Pendente</option>
-                      <option value="confirmado">Confirmado</option>
-                      <option value="realizado">Realizado</option>
-                      <option value="cancelado">Cancelado</option>
-                    </select>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -203,7 +242,7 @@ export default function AdminPanel({ profile, onLogout }: Props) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#1a2a3a', margin: 0 }}>Produtos</h2>
               <span style={{ color: '#888', fontSize: '13px', fontWeight: 600 }}>
-                {vacinas.filter(v => v.ativo).length + injetaveis.filter(i => i.ativo).length} ativos
+                {produtos.length} cadastrados
               </span>
             </div>
             <div style={{ display: 'flex', background: '#f0f4f8', borderRadius: '12px', padding: '4px', marginBottom: '20px', width: 'fit-content' }}>
@@ -214,30 +253,31 @@ export default function AdminPanel({ profile, onLogout }: Props) {
                 </button>
               ))}
             </div>
-            <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
-              {(tipoProduto === 'vacina' ? vacinas : injetaveis).map((p, i, arr) => (
-                <div key={p.id} style={{ display: 'flex', alignItems: 'center', padding: '16px 20px', borderBottom: i < arr.length - 1 ? '1px solid #f0f4f8' : 'none' }}>
-                  <div style={{ fontSize: '26px', marginRight: '14px' }}>{p.icone}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, color: p.ativo ? '#1a2a3a' : '#999', fontSize: '14px' }}>{p.nome}</div>
-                    {'doses' in p && (p as any).doses && <div style={{ color: '#888', fontSize: '12px', marginTop: '2px' }}>{(p as any).doses}</div>}
-                    {editandoId === p.id ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
-                        <input value={precoTemp} onChange={e => setPrecoTemp(e.target.value)} autoFocus
-                          style={{ padding: '6px 10px', borderRadius: '8px', border: '2px solid #1a5f9e', fontSize: '13px', fontFamily: "'Montserrat', sans-serif", width: '160px', outline: 'none' }} />
-                        <button onClick={() => salvarPreco(p.id, tipoProduto)}
-                          style={{ padding: '6px 14px', background: '#1a5f9e', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>Salvar</button>
-                        <button onClick={() => setEditandoId(null)}
-                          style={{ padding: '6px 14px', background: '#f0f4f8', color: '#666', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>Cancelar</button>
-                      </div>
-                    ) : (
-                      <div style={{ color: '#1a5f9e', fontWeight: 700, fontSize: '13px', marginTop: '4px' }}>{p.preco}</div>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ background: p.ativo ? '#e8f5e9' : '#ffebee', color: p.ativo ? '#2e7d32' : '#c62828', fontSize: '12px', fontWeight: 700, padding: '4px 10px', borderRadius: '20px' }}>
-                      {p.ativo ? '✓ Ativo' : '○ Inativo'}
-                    </span>
+            {loadingProd ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Carregando...</div>
+            ) : (
+              <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+                {produtosFiltrados.map((p, i) => (
+                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', padding: '16px 20px', borderBottom: i < produtosFiltrados.length - 1 ? '1px solid #f0f4f8' : 'none' }}>
+                    <div style={{ fontSize: '26px', marginRight: '14px' }}>{p.icone}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, color: '#1a2a3a', fontSize: '14px' }}>{p.nome}</div>
+                      {p.doses && <div style={{ color: '#888', fontSize: '12px', marginTop: '2px' }}>{p.doses}</div>}
+                      {editandoId === p.id ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                          <input value={precoTemp} onChange={e => setPrecoTemp(e.target.value)} autoFocus
+                            style={{ padding: '6px 10px', borderRadius: '8px', border: '2px solid #1a5f9e', fontSize: '13px', fontFamily: "'Montserrat', sans-serif", width: '160px', outline: 'none', color: '#0e3d6b' }} />
+                          <button onClick={() => salvarPreco(p.id)} disabled={salvando}
+                            style={{ padding: '6px 14px', background: '#1a5f9e', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
+                            {salvando ? '...' : 'Salvar'}
+                          </button>
+                          <button onClick={() => setEditandoId(null)}
+                            style={{ padding: '6px 14px', background: '#f0f4f8', color: '#666', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>Cancelar</button>
+                        </div>
+                      ) : (
+                        <div style={{ color: '#1a5f9e', fontWeight: 700, fontSize: '13px', marginTop: '4px' }}>R$ {p.preco}</div>
+                      )}
+                    </div>
                     {editandoId !== p.id && (
                       <button onClick={() => { setEditandoId(p.id); setPrecoTemp(p.preco) }}
                         style={{ padding: '6px 12px', background: '#f0f4f8', border: 'none', borderRadius: '8px', color: '#0e3d6b', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
@@ -245,13 +285,13 @@ export default function AdminPanel({ profile, onLogout }: Props) {
                       </button>
                     )}
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {/* FINANCEIRO — só proprietário/admin */}
+        {/* FINANCEIRO */}
         {aba === 'financeiro' && podeVerFinanceiro && (
           !pinDesbloqueado ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
@@ -263,7 +303,7 @@ export default function AdminPanel({ profile, onLogout }: Props) {
                   onChange={e => setPinInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && verificarPin()}
                   placeholder="• • • •"
-                  style={{ textAlign: 'center', fontSize: '28px', letterSpacing: '10px', padding: '14px', border: `2px solid ${pinErro ? '#f44336' : '#e0e8f0'}`, borderRadius: '14px', width: '160px', outline: 'none', fontFamily: "'Montserrat', sans-serif" }} />
+                  style={{ textAlign: 'center', fontSize: '28px', letterSpacing: '10px', padding: '14px', border: `2px solid ${pinErro ? '#f44336' : '#e0e8f0'}`, borderRadius: '14px', width: '160px', outline: 'none', fontFamily: "'Montserrat', sans-serif', colorScheme: 'light'" }} />
                 {pinErro && <p style={{ color: '#f44336', fontSize: '13px', marginTop: '10px' }}>PIN incorreto</p>}
                 <br />
                 <button onClick={verificarPin}
@@ -276,42 +316,24 @@ export default function AdminPanel({ profile, onLogout }: Props) {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#1a2a3a', margin: 0 }}>💰 Financeiro</h2>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button style={{ padding: '8px 16px', background: '#f0f4f8', border: 'none', borderRadius: '8px', color: '#0e3d6b', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>⬇ Exportar CSV</button>
-                  <button onClick={() => setPinDesbloqueado(false)} style={{ padding: '8px 16px', background: '#f0f4f8', border: 'none', borderRadius: '8px', color: '#888', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>🔒 Bloquear</button>
+                <button onClick={() => setPinDesbloqueado(false)}
+                  style={{ padding: '8px 16px', background: '#f0f4f8', border: 'none', borderRadius: '8px', color: '#888', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
+                  🔒 Bloquear
+                </button>
+              </div>
+              <div style={{ background: 'linear-gradient(135deg, #0e3d6b, #1a5f9e)', borderRadius: '20px', padding: '28px', marginBottom: '20px', color: 'white' }}>
+                <div style={{ fontSize: '13px', opacity: 0.7, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Total de Agendamentos</div>
+                <div style={{ fontSize: '40px', fontWeight: 800, marginBottom: '6px' }}>{agendamentos.length}</div>
+                <div style={{ opacity: 0.7, fontSize: '14px' }}>
+                  {confirmados} confirmados · {pendentes} pendentes · {agendamentos.filter(a => a.status === 'realizado').length} realizados
                 </div>
               </div>
-              <div style={{ display: 'flex', background: '#f0f4f8', borderRadius: '12px', padding: '4px', marginBottom: '20px', width: '300px' }}>
-                {(['hoje', 'mes'] as const).map(p => (
-                  <button key={p} onClick={() => setPeriodoFin(p)}
-                    style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: periodoFin === p ? 'white' : 'transparent', color: periodoFin === p ? '#0e3d6b' : '#888', fontWeight: periodoFin === p ? 700 : 500, fontSize: '14px', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif", boxShadow: periodoFin === p ? '0 2px 8px rgba(0,0,0,0.08)' : 'none' }}>
-                    {p === 'hoje' ? 'Hoje' : 'Este mês'}
-                  </button>
-                ))}
-              </div>
-              <div style={{ background: 'linear-gradient(135deg, #0e3d6b, #1a5f9e)', borderRadius: '20px', padding: '28px', marginBottom: '20px', color: 'white', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '150px', height: '150px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
-                <div style={{ fontSize: '13px', opacity: 0.7, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                  {periodoFin === 'hoje' ? 'Faturamento de Hoje' : 'Faturamento do Mês'}
-                </div>
-                <div style={{ fontSize: '40px', fontWeight: 800, marginBottom: '6px' }}>
-                  R$ {periodoFin === 'hoje' ? receitaHoje.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : receitaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </div>
-                {periodoFin === 'mes' && (
-                  <>
-                    <div style={{ opacity: 0.7, fontSize: '14px', marginBottom: '14px' }}>Meta: R$ {metaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                    <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '10px', height: '8px', marginBottom: '8px' }}>
-                      <div style={{ width: `${progresso}%`, background: 'white', borderRadius: '10px', height: '100%' }} />
-                    </div>
-                    <div style={{ fontSize: '13px', opacity: 0.8 }}>{progresso}% da meta atingida</div>
-                  </>
-                )}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '28px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
                 {[
-                  { label: 'Pagos', value: 89, emoji: '✅', color: '#2e7d32', bg: '#e8f5e9' },
-                  { label: 'Pendentes', value: 14, emoji: '⏳', color: '#e65100', bg: '#fff3e0' },
-                  { label: 'Cancelados', value: 5, emoji: '✗', color: '#c62828', bg: '#ffebee' },
+                  { label: 'Confirmados', value: confirmados, color: '#1565c0', bg: '#e3f2fd', emoji: '✅' },
+                  { label: 'Pendentes', value: pendentes, color: '#e65100', bg: '#fff3e0', emoji: '⏳' },
+                  { label: 'Realizados', value: agendamentos.filter(a => a.status === 'realizado').length, color: '#2e7d32', bg: '#e8f5e9', emoji: '💉' },
+                  { label: 'Cancelados', value: agendamentos.filter(a => a.status === 'cancelado').length, color: '#c62828', bg: '#ffebee', emoji: '✗' },
                 ].map(c => (
                   <div key={c.label} style={{ background: c.bg, borderRadius: '16px', padding: '20px', textAlign: 'center' }}>
                     <div style={{ fontSize: '28px', marginBottom: '8px' }}>{c.emoji}</div>
@@ -320,21 +342,9 @@ export default function AdminPanel({ profile, onLogout }: Props) {
                   </div>
                 ))}
               </div>
-              <div style={{ background: 'white', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1a2a3a', marginBottom: '16px' }}>Receita por produto</h3>
-                {produtosPorReceita.map(p => (
-                  <div key={p.id} style={{ marginBottom: '14px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                      <span style={{ fontSize: '14px', fontWeight: 600, color: '#1a2a3a' }}>{p.nome}</span>
-                      <span style={{ fontSize: '14px', fontWeight: 700, color: '#1a5f9e' }}>R$ {p.receita.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                    <div style={{ background: '#f0f4f8', borderRadius: '6px', height: '6px' }}>
-                      <div style={{ width: `${(p.receita / produtosPorReceita[0].receita) * 100}%`, background: 'linear-gradient(90deg, #1a5f9e, #2980b9)', borderRadius: '6px', height: '100%' }} />
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#888', marginTop: '3px', textAlign: 'right' }}>{p.vendas} aplic.</div>
-                  </div>
-                ))}
-              </div>
+              <p style={{ color: '#888', fontSize: '12px', marginTop: '20px', textAlign: 'center' }}>
+                Relatório financeiro completo com valores será habilitado após configuração de preços.
+              </p>
             </div>
           )
         )}
