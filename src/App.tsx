@@ -132,8 +132,14 @@ export default function App() {
             <span style={{ color: 'white', fontSize: '12px', fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}>{unidade.cidade}</span>
             <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>▾</span>
           </button>
-          <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '14px' }}>
-            {profile.nome.charAt(0).toUpperCase()}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '14px' }}>
+              {profile.nome.charAt(0).toUpperCase()}
+            </div>
+            <button onClick={signOut}
+              style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', color: 'white', padding: '6px 12px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, fontFamily: "'Montserrat', sans-serif" }}>
+              Sair
+            </button>
           </div>
         </div>
       </div>

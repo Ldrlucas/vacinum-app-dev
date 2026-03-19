@@ -14,6 +14,8 @@ export default function LoginPage({ onSignIn, onSignUp }: Props) {
   const [erro, setErro] = useState('')
   const [sucesso, setSucesso] = useState('')
   const [loading, setLoading] = useState(false)
+  const [mostrarSenha, setMostrarSenha] = useState(false)
+  const [lembrar, setLembrar] = useState(false)
 
   const inp: React.CSSProperties = {
     width: '100%', padding: '13px 16px', borderRadius: '12px',
@@ -79,7 +81,35 @@ export default function LoginPage({ onSignIn, onSignUp }: Props) {
             {modo === 'login' && (
               <>
                 <input placeholder="E-mail" type="email" value={email} onChange={e => setEmail(e.target.value)} style={inp} />
-                <input placeholder="Senha" type="password" value={senha} onChange={e => setSenha(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleEntrar()} style={{ ...inp, marginBottom: 0 }} />
+
+                {/* Campo senha com mostrar/ocultar */}
+                <div style={{ position: 'relative', marginBottom: '12px' }}>
+                  <input
+                    placeholder="Senha"
+                    type={mostrarSenha ? 'text' : 'password'}
+                    value={senha}
+                    onChange={e => setSenha(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleEntrar()}
+                    style={{ ...inp, marginBottom: 0, paddingRight: '48px' }}
+                  />
+                  <button
+                    onClick={() => setMostrarSenha(!mostrarSenha)}
+                    style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: 'rgba(255,255,255,0.6)', padding: 0 }}>
+                    {mostrarSenha ? '🙈' : '👁️'}
+                  </button>
+                </div>
+
+                {/* Lembrar senha */}
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: '4px' }}>
+                  <input
+                    type="checkbox"
+                    checked={lembrar}
+                    onChange={e => setLembrar(e.target.checked)}
+                    style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: 'white' }}
+                  />
+                  <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontFamily: "'Montserrat', sans-serif" }}>Lembrar minha senha</span>
+                </label>
+
                 {erro && <p style={{ color: '#fca5a5', fontSize: '13px', margin: '10px 0 0', textAlign: 'center' }}>{erro}</p>}
                 {sucesso && <p style={{ color: '#86efac', fontSize: '13px', margin: '10px 0 0', textAlign: 'center' }}>{sucesso}</p>}
                 <button onClick={handleEntrar} disabled={loading}
@@ -94,7 +124,23 @@ export default function LoginPage({ onSignIn, onSignUp }: Props) {
                 <input placeholder="Nome completo *" value={nome} onChange={e => setNome(e.target.value)} style={inp} />
                 <input placeholder="Telefone (opcional)" value={telefone} onChange={e => setTelefone(e.target.value)} style={inp} />
                 <input placeholder="E-mail *" type="email" value={email} onChange={e => setEmail(e.target.value)} style={inp} />
-                <input placeholder="Senha (mín. 6 caracteres) *" type="password" value={senha} onChange={e => setSenha(e.target.value)} style={{ ...inp, marginBottom: 0 }} />
+
+                {/* Campo senha cadastro com mostrar/ocultar */}
+                <div style={{ position: 'relative', marginBottom: '0' }}>
+                  <input
+                    placeholder="Senha (mín. 6 caracteres) *"
+                    type={mostrarSenha ? 'text' : 'password'}
+                    value={senha}
+                    onChange={e => setSenha(e.target.value)}
+                    style={{ ...inp, marginBottom: 0, paddingRight: '48px' }}
+                  />
+                  <button
+                    onClick={() => setMostrarSenha(!mostrarSenha)}
+                    style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: 'rgba(255,255,255,0.6)', padding: 0 }}>
+                    {mostrarSenha ? '🙈' : '👁️'}
+                  </button>
+                </div>
+
                 {erro && <p style={{ color: '#fca5a5', fontSize: '13px', margin: '10px 0 0', textAlign: 'center' }}>{erro}</p>}
                 <button onClick={handleCadastrar} disabled={loading}
                   style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', background: 'white', color: '#0e3d6b', fontWeight: 700, fontSize: '15px', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif", marginTop: '20px' }}>
