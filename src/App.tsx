@@ -111,29 +111,10 @@ export default function App() {
   ]
 
   return (
-<div style={{ fontFamily: "'Montserrat', sans-serif", minHeight: '100vh', width: '100%', background: 'linear-gradient(135deg, #0a2540 0%, #0e3d6b 40%, #1a5f9e 100%)', display: 'flex', alignItems: 'stretch', flexDirection: 'row' }}>
-      {/* Lateral esquerda — só desktop */}
+    <div style={{ fontFamily: "'Montserrat', sans-serif", minHeight: '100vh', width: '100%', background: 'linear-gradient(135deg, #0a2540 0%, #0e3d6b 40%, #1a5f9e 100%)', display: 'flex', alignItems: 'stretch', flexDirection: 'row' }}>
+
+      {/* Lateral esquerda — só desktop, vazia */}
       <div className="desktop-sidebar" style={{ flex: 1 }} />
-        <div style={{ textAlign: 'center' }}>
-          <svg width="64" height="64" viewBox="0 0 100 100" fill="none" style={{ marginBottom: '16px' }}>
-            <path d="M50 8 L82 33 L67 62 L50 78 L33 62 L18 33 Z" fill="white" opacity="0.95"/>
-            <path d="M28 66 Q50 92 72 66" stroke="white" strokeWidth="7" fill="none" strokeLinecap="round" opacity="0.9"/>
-          </svg>
-          <div style={{ fontWeight: 800, fontSize: '32px', color: 'white', letterSpacing: '4px', marginBottom: '4px' }}>VACINUM</div>
-          <div style={{ fontWeight: 400, fontSize: '12px', color: 'rgba(255,255,255,0.6)', letterSpacing: '3px', marginBottom: '24px' }}>CLÍNICA DE VACINAS</div>
-          <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '15px', lineHeight: 1.7, maxWidth: '280px' }}>
-            Agende suas vacinas com facilidade. Carteirinha digital, histórico completo e muito mais.
-          </div>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '280px' }}>
-          {['💉 Vacinas e Injetáveis', '📅 Agendamento Online', '📋 Carteirinha Digital', '🏥 Toledo e Marechal Cândido Rondon'].map(item => (
-            <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'rgba(255,255,255,0.8)', fontSize: '14px', fontWeight: 500 }}>
-              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,255,255,0.5)', flexShrink: 0 }} />
-              {item}
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* App mobile centralizado */}
       <div style={{ width: '100%', maxWidth: '480px', minHeight: '100vh', overflowY: 'scroll', background: '#f0f4f8', position: 'relative', flexShrink: 0, boxShadow: '0 0 60px rgba(0,0,0,0.3)' }}>
@@ -235,21 +216,8 @@ export default function App() {
 
       </div>
 
-      {/* Lateral direita — só desktop */}
-      <div className="desktop-sidebar" style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '24px' }}>
-        <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.6)', fontSize: '13px', lineHeight: 1.8, maxWidth: '260px' }}>
-          <div style={{ fontSize: '40px', marginBottom: '16px' }}>📱</div>
-          <div style={{ fontWeight: 700, color: 'white', fontSize: '16px', marginBottom: '8px' }}>Disponível como App</div>
-          <div>Acesse pelo navegador do celular e adicione à tela inicial para usar como aplicativo.</div>
-        </div>
-        <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', width: '100%', maxWidth: '260px' }}>
-          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', letterSpacing: '1px', marginBottom: '12px', textTransform: 'uppercase' }}>Horários de Atendimento</div>
-          <div style={{ color: 'white', fontSize: '13px', lineHeight: 1.8 }}>
-            <div>Seg–Sex: 8h às 18h</div>
-            <div>Sábado: 8h às 12h</div>
-          </div>
-        </div>
-      </div>
+      {/* Lateral direita — só desktop, vazia */}
+      <div className="desktop-sidebar" style={{ flex: 1 }} />
 
     </div>
   )
