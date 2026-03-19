@@ -97,8 +97,7 @@ export default function App() {
       <AgendamentoPage
         produto={produtoSel}
         unidade={unidade}
-        profile={profile}
-        onVoltar={() => setProdutoSel(null)}
+                onVoltar={() => setProdutoSel(null)}
         onSucesso={() => setAgendamentoSucesso(true)}
       />
     )
