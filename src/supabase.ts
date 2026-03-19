@@ -30,10 +30,12 @@ export type Produto = {
   resumo?: string
   descricao?: string
   preco: string
+  preco_3x?: string
+  preco_6x?: string
   doses?: string
   icone?: string
   categoria?: string
-  tipo: 'vacina' | 'injetavel'
+  tipo: 'vacina' | 'injetavel' | 'combo'
   ativo: boolean
 }
 
@@ -60,7 +62,6 @@ export type ItemCarteirinha = {
   lote?: string
   profissional?: string
   proxima_dose?: string
-  unidade_id?: number
   produtos?: Produto
   unidades?: Unidade
 }
