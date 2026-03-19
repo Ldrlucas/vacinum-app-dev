@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default function CatalogoTab({ onAgendar }: Props) {
-  const [tipo, setTipo] = useState<'vacina' | 'injetavel'>('vacina')
+  const [tipo, setTipo] = useState<'vacina' | 'injetavel' | 'combo'>('vacina')
   const [categoria, setCategoria] = useState('Todas')
   const [busca, setBusca] = useState('')
   const [modal, setModal] = useState<Produto | null>(null)
@@ -31,7 +31,7 @@ export default function CatalogoTab({ onAgendar }: Props) {
 
   const lista = produtos.filter(p =>
     p.tipo === tipo &&
-    (tipo === 'injetavel' || categoria === 'Todas' || p.categoria === categoria) &&
+    (tipo !== 'vacina' || categoria === 'Todas' || p.categoria === categoria) &&
     p.nome.toLowerCase().includes(busca.toLowerCase())
   )
 
@@ -46,10 +46,30 @@ export default function CatalogoTab({ onAgendar }: Props) {
             <div style={{ fontWeight: 800, color: '#0e3d6b', fontSize: '22px', marginBottom: '4px' }}>{modal.nome}</div>
             {modal.doses && <div style={{ color: '#94a3b8', fontSize: '13px', marginBottom: '16px' }}>{modal.doses}</div>}
             <p style={{ color: '#475569', fontSize: '15px', lineHeight: '1.7', marginBottom: '24px' }}>{modal.descricao}</p>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderTop: '1px solid #f1f5f9', marginBottom: '16px' }}>
-              <span style={{ color: '#64748b', fontSize: '14px' }}>Valor</span>
-              <span style={{ color: '#1a5f9e', fontWeight: 800, fontSize: '16px' }}>{modal.preco}</span>
+
+            {/* Tabela de preços */}
+            <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #f1f5f9', marginBottom: '20px' }}>
+              <div style={{ background: '#f8fafc', padding: '10px 16px', fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                Formas de Pagamento
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderTop: '1px solid #f1f5f9' }}>
+                <span style={{ color: '#64748b', fontSize: '14px' }}>À Vista / Pix</span>
+                <span style={{ color: '#1a5f9e', fontWeight: 800, fontSize: '16px' }}>R$ {modal.preco}</span>
+              </div>
+              {(modal as any).preco_3x && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderTop: '1px solid #f1f5f9' }}>
+                  <span style={{ color: '#64748b', fontSize: '14px' }}>Parcelado em 3x</span>
+                  <span style={{ color: '#475569', fontWeight: 700, fontSize: '15px' }}>R$ {(modal as any).preco_3x}</span>
+                </div>
+              )}
+              {(modal as any).preco_6x && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderTop: '1px solid #f1f5f9' }}>
+                  <span style={{ color: '#64748b', fontSize: '14px' }}>Parcelado em 6x</span>
+                  <span style={{ color: '#475569', fontWeight: 700, fontSize: '15px' }}>R$ {(modal as any).preco_6x}</span>
+                </div>
+              )}
             </div>
+
             <button onClick={() => { onAgendar(modal); setModal(null) }}
               style={{ width: '100%', padding: '15px', borderRadius: '14px', border: 'none', background: 'linear-gradient(135deg, #1a5f9e, #2980b9)', color: 'white', fontWeight: 700, fontSize: '15px', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif", marginBottom: '10px' }}>
               📅 Ver Horários Disponíveis
@@ -66,20 +86,28 @@ export default function CatalogoTab({ onAgendar }: Props) {
         <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#0e3d6b', margin: '0 0 4px' }}>Serviços</h2>
         <p style={{ color: '#64748b', fontSize: '13px', margin: '0 0 16px' }}>Agende vacinas e injetáveis com facilidade</p>
 
+        {/* Toggle Vacinas / Injetáveis / Combos */}
         <div style={{ display: 'flex', background: 'white', borderRadius: '14px', padding: '4px', marginBottom: '14px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-          {(['vacina', 'injetavel'] as const).map(t => (
-            <button key={t} onClick={() => { setTipo(t); setCategoria('Todas'); setBusca('') }}
-              style={{ flex: 1, padding: '11px', border: 'none', borderRadius: '11px', background: tipo === t ? 'linear-gradient(135deg, #1a5f9e, #2980b9)' : 'transparent', color: tipo === t ? 'white' : '#94a3b8', fontWeight: tipo === t ? 700 : 500, fontSize: '14px', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif", transition: 'all 0.2s' }}>
-              {t === 'vacina' ? '💉 Vacinas' : '✨ Injetáveis'}
+          {([
+            { id: 'vacina', label: '💉 Vacinas' },
+            { id: 'injetavel', label: '✨ Injetáveis' },
+            { id: 'combo', label: '🎁 Combos' },
+          ] as const).map(t => (
+            <button key={t.id} onClick={() => { setTipo(t.id); setCategoria('Todas'); setBusca('') }}
+              style={{ flex: 1, padding: '11px 6px', border: 'none', borderRadius: '11px', background: tipo === t.id ? 'linear-gradient(135deg, #1a5f9e, #2980b9)' : 'transparent', color: tipo === t.id ? 'white' : '#94a3b8', fontWeight: tipo === t.id ? 700 : 500, fontSize: '12px', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif", transition: 'all 0.2s' }}>
+              {t.label}
             </button>
           ))}
         </div>
 
+        {/* Busca */}
         <div style={{ position: 'relative', marginBottom: '12px' }}>
           <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '16px' }}>🔍</span>
           <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar..."
-style={{ width: '100%', padding: '12px 14px 12px 42px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '14px', fontFamily: "'Montserrat', sans-serif", outline: 'none', boxSizing: 'border-box', background: 'white', color: '#0e3d6b' }} />        </div>
+            style={{ width: '100%', padding: '12px 14px 12px 42px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '14px', fontFamily: "'Montserrat', sans-serif", outline: 'none', boxSizing: 'border-box', background: 'white', color: '#0e3d6b' }} />
+        </div>
 
+        {/* Categorias — só vacinas */}
         {tipo === 'vacina' && (
           <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '16px' }}>
             {CATEGORIAS.map(c => (
@@ -105,7 +133,7 @@ style={{ width: '100%', padding: '12px 14px 12px 42px', borderRadius: '12px', bo
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
                       <div style={{ fontWeight: 700, fontSize: '15px', color: '#0e3d6b' }}>{p.nome}</div>
-                      <div style={{ fontWeight: 700, fontSize: '13px', color: '#1a5f9e', flexShrink: 0 }}>{p.preco}</div>
+                      <div style={{ fontWeight: 700, fontSize: '13px', color: '#1a5f9e', flexShrink: 0 }}>R$ {p.preco}</div>
                     </div>
                     {p.doses && <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>{p.doses}</div>}
                     {p.resumo && <div style={{ fontSize: '13px', color: '#64748b', marginTop: '6px', lineHeight: '1.4' }}>{p.resumo}</div>}
