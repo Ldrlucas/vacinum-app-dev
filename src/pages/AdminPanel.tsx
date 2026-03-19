@@ -173,8 +173,7 @@ export default function AdminPanel({ profile, onLogout }: Props) {
                   value={(modal as any)[f.key]}
                   onChange={e => setModal(prev => prev ? { ...prev, [f.key]: e.target.value } : null)}
                   placeholder={f.placeholder}
-                  style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '14px', fontFamily: "'Montserrat', sans-serif", outline: 'none', boxSizing: 'border-box', color: '#0e3d6b' }}
-                />
+style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '14px', fontFamily: "'Montserrat', sans-serif", outline: 'none', boxSizing: 'border-box', color: '#0e3d6b', background: 'white' }}                />
               </div>
             ))}
             <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
