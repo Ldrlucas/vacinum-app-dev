@@ -50,8 +50,6 @@ export default function AdminPanel({ profile, onLogout }: Props) {
   const [pinDesbloqueado, setPinDesbloqueado] = useState(false)
   const [pinInput, setPinInput] = useState('')
   const [pinErro, setPinErro] = useState(false)
-  const [periodoFin, setPeriodoFin] = useState<'hoje' | 'mes'>('mes')
-
   useEffect(() => {
     carregarAgendamentos()
     carregarProdutos()
