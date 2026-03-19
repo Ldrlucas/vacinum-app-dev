@@ -95,8 +95,7 @@ export default function AgendamentoPage({ produto, unidade, onVoltar, onSucesso 
           <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '10px' }}>DATA</div>
           <input type="date" value={data} onChange={e => { setData(e.target.value); setHorario(''); setErro('') }}
             min={hoje}
-            style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '15px', fontFamily: "'Montserrat', sans-serif", outline: 'none', boxSizing: 'border-box', background: 'white', color: '#0e3d6b' }} />
-          {data && isDomingo(data) && (
+style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '15px', fontFamily: "'Montserrat', sans-serif", outline: 'none', boxSizing: 'border-box', background: 'white', color: '#0e3d6b', colorScheme: 'light' }} />          {data && isDomingo(data) && (
             <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '6px' }}>Não atendemos aos domingos. Escolha outro dia.</p>
           )}
         </div>

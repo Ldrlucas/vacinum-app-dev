@@ -78,8 +78,7 @@ export default function CatalogoTab({ onAgendar }: Props) {
         <div style={{ position: 'relative', marginBottom: '12px' }}>
           <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '16px' }}>🔍</span>
           <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar..."
-            style={{ width: '100%', padding: '12px 14px 12px 42px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '14px', fontFamily: "'Montserrat', sans-serif", outline: 'none', boxSizing: 'border-box', background: 'white' }} />
-        </div>
+style={{ width: '100%', padding: '12px 14px 12px 42px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '14px', fontFamily: "'Montserrat', sans-serif", outline: 'none', boxSizing: 'border-box', background: 'white', color: '#0e3d6b' }} />        </div>
 
         {tipo === 'vacina' && (
           <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '16px' }}>
