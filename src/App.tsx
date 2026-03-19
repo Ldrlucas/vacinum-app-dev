@@ -6,9 +6,10 @@ import UnidadePage from './pages/UnidadePage'
 import CatalogoTab from './pages/CatalogoTab'
 import AgendamentoPage from './pages/AgendamentoPage'
 import CarteirinhaTab from './pages/CarteirinhaTab'
+import MeusAgendamentosTab from './pages/MeusAgendamentosTab'
 import AdminPanel from './pages/AdminPanel'
 
-type Aba = 'vacinas' | 'carteirinha' | 'assistente'
+type Aba = 'vacinas' | 'agendamentos' | 'carteirinha' | 'assistente'
 
 const RESPOSTAS: Record<string, string> = {
   'febre amarela': 'A vacina de Febre Amarela oferece proteção vitalícia com dose única. Temos disponibilidade essa semana! 🌡️',
@@ -69,7 +70,6 @@ export default function App() {
 
   if (!user || !profile) return <LoginPage onSignIn={signIn} onSignUp={signUp} />
 
-  // Controle de acesso por tipo de perfil
   const isAdmin = profile.tipo === 'admin' || profile.tipo === 'proprietario' || profile.tipo === 'funcionario'
   if (isAdmin) return <AdminPanel profile={profile} onLogout={signOut} />
 
@@ -97,7 +97,7 @@ export default function App() {
       <AgendamentoPage
         produto={produtoSel}
         unidade={unidade}
-                onVoltar={() => setProdutoSel(null)}
+        onVoltar={() => setProdutoSel(null)}
         onSucesso={() => setAgendamentoSucesso(true)}
       />
     )
@@ -105,6 +105,7 @@ export default function App() {
 
   const navItems: { id: Aba; emoji: string; label: string }[] = [
     { id: 'vacinas', emoji: '💉', label: 'Vacinas' },
+    { id: 'agendamentos', emoji: '📅', label: 'Agendamentos' },
     { id: 'carteirinha', emoji: '📋', label: 'Carteirinha' },
     { id: 'assistente', emoji: '💬', label: 'Assistente' },
   ]
@@ -140,6 +141,7 @@ export default function App() {
       {/* Conteúdo */}
       <div style={{ paddingBottom: '72px', width: '100%' }}>
         {aba === 'vacinas' && <CatalogoTab onAgendar={p => { setProdutoSel(p); setAgendamentoSucesso(false) }} />}
+        {aba === 'agendamentos' && <MeusAgendamentosTab profile={profile} />}
         {aba === 'carteirinha' && <CarteirinhaTab profile={profile} />}
         {aba === 'assistente' && (
           <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 60px - 72px)' }}>
@@ -177,7 +179,7 @@ export default function App() {
               </div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <input value={inputChat} onChange={e => setInputChat(e.target.value)} onKeyDown={e => e.key === 'Enter' && enviarChat()} placeholder="Digite sua dúvida..."
-                  style={{ flex: 1, padding: '11px 16px', borderRadius: '24px', border: '1px solid #e2e8f0', fontSize: '14px', fontFamily: "'Montserrat', sans-serif", outline: 'none', background: '#f8fafc' }} />
+                  style={{ flex: 1, padding: '11px 16px', borderRadius: '24px', border: '1px solid #e2e8f0', fontSize: '14px', fontFamily: "'Montserrat', sans-serif", outline: 'none', background: '#f8fafc', color: '#0e3d6b' }} />
                 <button onClick={() => enviarChat()}
                   style={{ width: '42px', height: '42px', borderRadius: '50%', border: 'none', background: 'linear-gradient(135deg, #1a5f9e, #2980b9)', color: 'white', fontSize: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   ›
@@ -194,7 +196,7 @@ export default function App() {
           <button key={item.id} onClick={() => setAba(item.id)}
             style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
             <span style={{ fontSize: '22px' }}>{item.emoji}</span>
-            <span style={{ fontSize: '11px', fontWeight: aba === item.id ? 700 : 500, color: aba === item.id ? '#1a5f9e' : '#94a3b8', fontFamily: "'Montserrat', sans-serif" }}>{item.label}</span>
+            <span style={{ fontSize: '10px', fontWeight: aba === item.id ? 700 : 500, color: aba === item.id ? '#1a5f9e' : '#94a3b8', fontFamily: "'Montserrat', sans-serif" }}>{item.label}</span>
             {aba === item.id && <div style={{ width: '20px', height: '3px', background: '#1a5f9e', borderRadius: '2px' }} />}
           </button>
         ))}
