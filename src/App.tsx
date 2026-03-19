@@ -111,102 +111,146 @@ export default function App() {
   ]
 
   return (
-    <div style={{ fontFamily: "'Montserrat', sans-serif", maxWidth: '480px', width: '100%', margin: '0 auto', minHeight: '100vh', overflowY: 'scroll', background: '#f0f4f8', position: 'relative' }}>
-
-      {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, #0e3d6b, #1a5f9e)', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 200 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <svg width="30" height="30" viewBox="0 0 100 100" fill="none">
+<div style={{ fontFamily: "'Montserrat', sans-serif", minHeight: '100vh', width: '100%', background: 'linear-gradient(135deg, #0a2540 0%, #0e3d6b 40%, #1a5f9e 100%)', display: 'flex', alignItems: 'stretch', flexDirection: 'row' }}>
+      {/* Lateral esquerda — só desktop */}
+      <div className="desktop-sidebar" style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '32px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <svg width="64" height="64" viewBox="0 0 100 100" fill="none" style={{ marginBottom: '16px' }}>
             <path d="M50 8 L82 33 L67 62 L50 78 L33 62 L18 33 Z" fill="white" opacity="0.95"/>
             <path d="M28 66 Q50 92 72 66" stroke="white" strokeWidth="7" fill="none" strokeLinecap="round" opacity="0.9"/>
           </svg>
-          <div>
-            <div style={{ fontWeight: 800, fontSize: '14px', color: 'white', letterSpacing: '3px' }}>VACINUM</div>
-            <div style={{ fontWeight: 400, fontSize: '8px', color: 'rgba(255,255,255,0.65)', letterSpacing: '2px' }}>CLÍNICA DE VACINAS</div>
+          <div style={{ fontWeight: 800, fontSize: '32px', color: 'white', letterSpacing: '4px', marginBottom: '4px' }}>VACINUM</div>
+          <div style={{ fontWeight: 400, fontSize: '12px', color: 'rgba(255,255,255,0.6)', letterSpacing: '3px', marginBottom: '24px' }}>CLÍNICA DE VACINAS</div>
+          <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '15px', lineHeight: 1.7, maxWidth: '280px' }}>
+            Agende suas vacinas com facilidade. Carteirinha digital, histórico completo e muito mais.
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button onClick={() => setUnidade(null)}
-            style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '20px', padding: '6px 14px', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
-            <span style={{ fontSize: '11px' }}>📍</span>
-            <span style={{ color: 'white', fontSize: '12px', fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}>{unidade.cidade}</span>
-            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>▾</span>
-          </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '14px' }}>
-              {profile.nome.charAt(0).toUpperCase()}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '280px' }}>
+          {['💉 Vacinas e Injetáveis', '📅 Agendamento Online', '📋 Carteirinha Digital', '🏥 Toledo e Marechal Cândido Rondon'].map(item => (
+            <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'rgba(255,255,255,0.8)', fontSize: '14px', fontWeight: 500 }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,255,255,0.5)', flexShrink: 0 }} />
+              {item}
             </div>
-            <button onClick={signOut}
-              style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', color: 'white', padding: '6px 12px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, fontFamily: "'Montserrat', sans-serif" }}>
-              Sair
-            </button>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Conteúdo */}
-      <div style={{ paddingBottom: '72px', width: '100%' }}>
-        {aba === 'vacinas' && <CatalogoTab onAgendar={p => { setProdutoSel(p); setAgendamentoSucesso(false) }} />}
-        {aba === 'agendamentos' && <MeusAgendamentosTab profile={profile} />}
-        {aba === 'carteirinha' && <CarteirinhaTab profile={profile} />}
-        {aba === 'assistente' && (
-          <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 60px - 72px)' }}>
-            <div style={{ background: 'white', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '14px', borderBottom: '1px solid #f0f4f8' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'linear-gradient(135deg, #0e3d6b, #1a5f9e)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🤖</div>
-              <div>
-                <div style={{ fontWeight: 700, color: '#0e3d6b', fontSize: '15px' }}>Assistente Vacinum</div>
-                <div style={{ fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', color: '#22c55e' }}>
-                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} /> Online agora
-                </div>
-              </div>
+      {/* App mobile centralizado */}
+      <div style={{ width: '100%', maxWidth: '480px', minHeight: '100vh', overflowY: 'scroll', background: '#f0f4f8', position: 'relative', flexShrink: 0, boxShadow: '0 0 60px rgba(0,0,0,0.3)' }}>
+
+        {/* Header */}
+        <div style={{ background: 'linear-gradient(135deg, #0e3d6b, #1a5f9e)', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 200 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <svg width="30" height="30" viewBox="0 0 100 100" fill="none">
+              <path d="M50 8 L82 33 L67 62 L50 78 L33 62 L18 33 Z" fill="white" opacity="0.95"/>
+              <path d="M28 66 Q50 92 72 66" stroke="white" strokeWidth="7" fill="none" strokeLinecap="round" opacity="0.9"/>
+            </svg>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '14px', color: 'white', letterSpacing: '3px' }}>VACINUM</div>
+              <div style={{ fontWeight: 400, fontSize: '8px', color: 'rgba(255,255,255,0.65)', letterSpacing: '2px' }}>CLÍNICA DE VACINAS</div>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', background: '#f0f4f8' }}>
-              {msgs.map((m, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: m.de === 'usuario' ? 'flex-end' : 'flex-start' }}>
-                  <div style={{ maxWidth: '78%', padding: '13px 16px', borderRadius: m.de === 'usuario' ? '18px 18px 4px 18px' : '18px 18px 18px 4px', background: m.de === 'usuario' ? '#1a5f9e' : 'white', color: m.de === 'usuario' ? 'white' : '#334155', fontSize: '14px', lineHeight: 1.5, boxShadow: '0 2px 8px rgba(0,0,0,0.07)' }}>
-                    {m.texto}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button onClick={() => setUnidade(null)}
+              style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '20px', padding: '6px 14px', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+              <span style={{ fontSize: '11px' }}>📍</span>
+              <span style={{ color: 'white', fontSize: '12px', fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}>{unidade.cidade}</span>
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>▾</span>
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '14px' }}>
+                {profile.nome.charAt(0).toUpperCase()}
+              </div>
+              <button onClick={signOut}
+                style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', color: 'white', padding: '6px 12px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, fontFamily: "'Montserrat', sans-serif" }}>
+                Sair
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Conteúdo */}
+        <div style={{ paddingBottom: '72px', width: '100%' }}>
+          {aba === 'vacinas' && <CatalogoTab onAgendar={p => { setProdutoSel(p); setAgendamentoSucesso(false) }} />}
+          {aba === 'agendamentos' && <MeusAgendamentosTab profile={profile} />}
+          {aba === 'carteirinha' && <CarteirinhaTab profile={profile} />}
+          {aba === 'assistente' && (
+            <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 60px - 72px)' }}>
+              <div style={{ background: 'white', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '14px', borderBottom: '1px solid #f0f4f8' }}>
+                <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'linear-gradient(135deg, #0e3d6b, #1a5f9e)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🤖</div>
+                <div>
+                  <div style={{ fontWeight: 700, color: '#0e3d6b', fontSize: '15px' }}>Assistente Vacinum</div>
+                  <div style={{ fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', color: '#22c55e' }}>
+                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} /> Online agora
                   </div>
                 </div>
-              ))}
-              {chatLoading && (
-                <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                  <div style={{ padding: '13px 16px', borderRadius: '18px 18px 18px 4px', background: 'white', color: '#94a3b8', fontSize: '14px' }}>Digitando...</div>
-                </div>
-              )}
-            </div>
-            <div style={{ background: 'white', padding: '10px 14px', borderTop: '1px solid #f0f4f8' }}>
-              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '10px' }}>
-                {['Horários', 'Preços', 'Febre Amarela', 'Agendamento'].map(s => (
-                  <button key={s} onClick={() => enviarChat(s)}
-                    style={{ flexShrink: 0, padding: '6px 14px', borderRadius: '20px', border: '1px solid #e2e8f0', background: 'white', color: '#0e3d6b', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
-                    {s}
-                  </button>
+              </div>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', background: '#f0f4f8' }}>
+                {msgs.map((m, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: m.de === 'usuario' ? 'flex-end' : 'flex-start' }}>
+                    <div style={{ maxWidth: '78%', padding: '13px 16px', borderRadius: m.de === 'usuario' ? '18px 18px 4px 18px' : '18px 18px 18px 4px', background: m.de === 'usuario' ? '#1a5f9e' : 'white', color: m.de === 'usuario' ? 'white' : '#334155', fontSize: '14px', lineHeight: 1.5, boxShadow: '0 2px 8px rgba(0,0,0,0.07)' }}>
+                      {m.texto}
+                    </div>
+                  </div>
                 ))}
+                {chatLoading && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                    <div style={{ padding: '13px 16px', borderRadius: '18px 18px 18px 4px', background: 'white', color: '#94a3b8', fontSize: '14px' }}>Digitando...</div>
+                  </div>
+                )}
               </div>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input value={inputChat} onChange={e => setInputChat(e.target.value)} onKeyDown={e => e.key === 'Enter' && enviarChat()} placeholder="Digite sua dúvida..."
-                  style={{ flex: 1, padding: '11px 16px', borderRadius: '24px', border: '1px solid #e2e8f0', fontSize: '14px', fontFamily: "'Montserrat', sans-serif", outline: 'none', background: '#f8fafc', color: '#0e3d6b' }} />
-                <button onClick={() => enviarChat()}
-                  style={{ width: '42px', height: '42px', borderRadius: '50%', border: 'none', background: 'linear-gradient(135deg, #1a5f9e, #2980b9)', color: 'white', fontSize: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  ›
-                </button>
+              <div style={{ background: 'white', padding: '10px 14px', borderTop: '1px solid #f0f4f8' }}>
+                <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '10px' }}>
+                  {['Horários', 'Preços', 'Febre Amarela', 'Agendamento'].map(s => (
+                    <button key={s} onClick={() => enviarChat(s)}
+                      style={{ flexShrink: 0, padding: '6px 14px', borderRadius: '20px', border: '1px solid #e2e8f0', background: 'white', color: '#0e3d6b', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input value={inputChat} onChange={e => setInputChat(e.target.value)} onKeyDown={e => e.key === 'Enter' && enviarChat()} placeholder="Digite sua dúvida..."
+                    style={{ flex: 1, padding: '11px 16px', borderRadius: '24px', border: '1px solid #e2e8f0', fontSize: '14px', fontFamily: "'Montserrat', sans-serif", outline: 'none', background: '#f8fafc', color: '#0e3d6b' }} />
+                  <button onClick={() => enviarChat()}
+                    style={{ width: '42px', height: '42px', borderRadius: '50%', border: 'none', background: 'linear-gradient(135deg, #1a5f9e, #2980b9)', color: 'white', fontSize: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    ›
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        {/* Bottom Nav */}
+        <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', background: 'white', borderTop: '1px solid #e2e8f0', display: 'flex', padding: '8px 0 12px', boxShadow: '0 -4px 20px rgba(0,0,0,0.08)', zIndex: 200 }}>
+          {navItems.map(item => (
+            <button key={item.id} onClick={() => setAba(item.id)}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
+              <span style={{ fontSize: '22px' }}>{item.emoji}</span>
+              <span style={{ fontSize: '10px', fontWeight: aba === item.id ? 700 : 500, color: aba === item.id ? '#1a5f9e' : '#94a3b8', fontFamily: "'Montserrat', sans-serif" }}>{item.label}</span>
+              {aba === item.id && <div style={{ width: '20px', height: '3px', background: '#1a5f9e', borderRadius: '2px' }} />}
+            </button>
+          ))}
+        </div>
+
       </div>
 
-      {/* Bottom Nav */}
-      <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', background: 'white', borderTop: '1px solid #e2e8f0', display: 'flex', padding: '8px 0 12px', boxShadow: '0 -4px 20px rgba(0,0,0,0.08)', zIndex: 200 }}>
-        {navItems.map(item => (
-          <button key={item.id} onClick={() => setAba(item.id)}
-            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
-            <span style={{ fontSize: '22px' }}>{item.emoji}</span>
-            <span style={{ fontSize: '10px', fontWeight: aba === item.id ? 700 : 500, color: aba === item.id ? '#1a5f9e' : '#94a3b8', fontFamily: "'Montserrat', sans-serif" }}>{item.label}</span>
-            {aba === item.id && <div style={{ width: '20px', height: '3px', background: '#1a5f9e', borderRadius: '2px' }} />}
-          </button>
-        ))}
+      {/* Lateral direita — só desktop */}
+      <div className="desktop-sidebar" style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '24px' }}>
+        <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.6)', fontSize: '13px', lineHeight: 1.8, maxWidth: '260px' }}>
+          <div style={{ fontSize: '40px', marginBottom: '16px' }}>📱</div>
+          <div style={{ fontWeight: 700, color: 'white', fontSize: '16px', marginBottom: '8px' }}>Disponível como App</div>
+          <div>Acesse pelo navegador do celular e adicione à tela inicial para usar como aplicativo.</div>
+        </div>
+        <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', width: '100%', maxWidth: '260px' }}>
+          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', letterSpacing: '1px', marginBottom: '12px', textTransform: 'uppercase' }}>Horários de Atendimento</div>
+          <div style={{ color: 'white', fontSize: '13px', lineHeight: 1.8 }}>
+            <div>Seg–Sex: 8h às 18h</div>
+            <div>Sábado: 8h às 12h</div>
+          </div>
+        </div>
       </div>
+
     </div>
   )
 }
