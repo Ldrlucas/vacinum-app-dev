@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import type { Produto, Unidade, UserProfile } from '../supabase'
+import { supabase } from '../supabase'
+import { useAuth } from '../hooks/useAuth'
+import type { Produto, Unidade } from '../supabase'
 
 interface Props {
   produto: Produto
   unidade: Unidade
-  profile?: UserProfile
   onVoltar: () => void
   onSucesso: () => void
 }
@@ -12,6 +13,7 @@ interface Props {
 const HORARIOS = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30']
 
 export default function AgendamentoPage({ produto, unidade, onVoltar, onSucesso }: Props) {
+  const { user } = useAuth()
   const [unidadeSel, setUnidadeSel] = useState<'Toledo' | 'Marechal'>(unidade.cidade === 'Toledo' ? 'Toledo' : 'Marechal')
   const [data, setData] = useState('')
   const [horario, setHorario] = useState('')
@@ -29,16 +31,36 @@ export default function AgendamentoPage({ produto, unidade, onVoltar, onSucesso 
     if (!data) { setErro('Selecione uma data'); return }
     if (isDomingo(data)) { setErro('Não atendemos aos domingos'); return }
     if (!horario) { setErro('Selecione um horário'); return }
+    if (!user) { setErro('Usuário não autenticado'); return }
+
     setLoading(true)
-    await new Promise(r => setTimeout(r, 800))
+    setErro('')
+
+    const unidadeId = unidadeSel === 'Toledo' ? 1 : 2
+
+    const { error } = await supabase.from('agendamentos').insert({
+      paciente_id: user.id,
+      produto_id: produto.id,
+      unidade_id: unidadeId,
+      data,
+      horario,
+      status: 'pendente'
+    })
+
     setLoading(false)
+
+    if (error) {
+      setErro('Erro ao agendar. Tente novamente.')
+      console.error(error)
+      return
+    }
+
     onSucesso()
   }
 
   return (
     <div style={{ fontFamily: "'Montserrat', sans-serif", minHeight: '100vh', background: '#f0f4f8' }}>
 
-      {/* Header sticky */}
       <div style={{ background: 'linear-gradient(135deg, #0e3d6b, #1a5f9e)', padding: '14px 20px', position: 'sticky', top: 0, zIndex: 100 }}>
         <button onClick={onVoltar} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif", padding: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
           ← Voltar
@@ -47,7 +69,6 @@ export default function AgendamentoPage({ produto, unidade, onVoltar, onSucesso 
 
       <div style={{ padding: '20px 16px 100px' }}>
 
-        {/* Card produto */}
         <div style={{ background: 'linear-gradient(135deg, #0e3d6b, #1a5f9e)', borderRadius: '16px', padding: '20px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '14px' }}>
           <div style={{ fontSize: '40px' }}>{produto.icone || '💉'}</div>
           <div>
@@ -58,7 +79,6 @@ export default function AgendamentoPage({ produto, unidade, onVoltar, onSucesso 
           </div>
         </div>
 
-        {/* Unidade */}
         <div style={{ marginBottom: '20px' }}>
           <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '10px' }}>UNIDADE</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -71,7 +91,6 @@ export default function AgendamentoPage({ produto, unidade, onVoltar, onSucesso 
           </div>
         </div>
 
-        {/* Data */}
         <div style={{ marginBottom: '20px' }}>
           <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '10px' }}>DATA</div>
           <input type="date" value={data} onChange={e => { setData(e.target.value); setHorario(''); setErro('') }}
@@ -82,7 +101,6 @@ export default function AgendamentoPage({ produto, unidade, onVoltar, onSucesso 
           )}
         </div>
 
-        {/* Horários */}
         {data && !isDomingo(data) && (
           <div style={{ marginBottom: '24px' }}>
             <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '10px' }}>HORÁRIOS DISPONÍVEIS</div>
