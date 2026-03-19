@@ -17,7 +17,7 @@ interface AgendamentoAdmin {
   produto_id: number
   unidade_id: number
   paciente: { nome: string } | null
-  produto: { nome: string; icone: string } | null
+  produto: { nome: string; icone: string; preco: string } | null
   unidade: { nome: string; cidade: string } | null
 }
 
@@ -39,6 +39,16 @@ interface ModalCarteirinha {
   proxima_dose: string
 }
 
+interface NovoProduto {
+  nome: string
+  icone: string
+  resumo: string
+  descricao: string
+  preco: string
+  doses: string
+  tipo: 'vacina' | 'injetavel' | 'combo'
+}
+
 const STATUS_STYLE: Record<string, { label: string; color: string; bg: string }> = {
   confirmado: { label: 'Confirmado', color: '#1565c0', bg: '#e3f2fd' },
   pendente: { label: 'Pendente', color: '#e65100', bg: '#fff3e0' },
@@ -54,9 +64,10 @@ export default function AdminPanel({ profile, onLogout }: Props) {
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [loadingAg, setLoadingAg] = useState(true)
   const [loadingProd, setLoadingProd] = useState(true)
-  const [tipoProduto, setTipoProduto] = useState<'vacina' | 'injetavel'>('vacina')
+  const [tipoProduto, setTipoProduto] = useState<'vacina' | 'injetavel' | 'combo'>('vacina')
   const [editandoId, setEditandoId] = useState<number | null>(null)
   const [precoTemp, setPrecoTemp] = useState('')
+  const [nomeTemp, setNomeTemp] = useState('')
   const [salvando, setSalvando] = useState(false)
   const [pinDesbloqueado, setPinDesbloqueado] = useState(false)
   const [pinInput, setPinInput] = useState('')
@@ -64,6 +75,10 @@ export default function AdminPanel({ profile, onLogout }: Props) {
   const [modal, setModal] = useState<ModalCarteirinha | null>(null)
   const [salvandoCarteirinha, setSalvandoCarteirinha] = useState(false)
   const [sucessoCarteirinha, setSucessoCarteirinha] = useState<number | null>(null)
+  const [modalNovoProduto, setModalNovoProduto] = useState(false)
+  const [novoProduto, setNovoProduto] = useState<NovoProduto>({ nome: '', icone: '💉', resumo: '', descricao: '', preco: '', doses: '', tipo: 'vacina' })
+  const [salvandoProduto, setSalvandoProduto] = useState(false)
+  const [confirmandoRemocao, setConfirmandoRemocao] = useState<number | null>(null)
 
   useEffect(() => {
     carregarAgendamentos()
@@ -77,7 +92,7 @@ export default function AdminPanel({ profile, onLogout }: Props) {
       .select(`
         id, data, horario, status, observacoes, paciente_id, produto_id, unidade_id,
         paciente:profiles!agendamentos_paciente_id_fkey(nome),
-        produto:produtos!agendamentos_produto_id_fkey(nome, icone),
+        produto:produtos!agendamentos_produto_id_fkey(nome, icone, preco),
         unidade:unidades!agendamentos_unidade_id_fkey(nome, cidade)
       `)
       .order('data', { ascending: false })
@@ -87,10 +102,7 @@ export default function AdminPanel({ profile, onLogout }: Props) {
 
   async function carregarProdutos() {
     setLoadingProd(true)
-    const { data, error } = await supabase
-      .from('produtos')
-      .select('*')
-      .order('nome')
+    const { data, error } = await supabase.from('produtos').select('*').order('nome')
     if (!error && data) setProdutos(data)
     setLoadingProd(false)
   }
@@ -100,14 +112,49 @@ export default function AdminPanel({ profile, onLogout }: Props) {
     await supabase.from('agendamentos').update({ status }).eq('id', id)
   }
 
-  async function salvarPreco(id: number) {
+  async function salvarEdicao(id: number) {
     setSalvando(true)
-    const { error } = await supabase.from('produtos').update({ preco: precoTemp }).eq('id', id)
+    const { error } = await supabase.from('produtos').update({ preco: precoTemp, nome: nomeTemp }).eq('id', id)
     if (!error) {
-      setProdutos(prev => prev.map(p => p.id === id ? { ...p, preco: precoTemp } : p))
+      setProdutos(prev => prev.map(p => p.id === id ? { ...p, preco: precoTemp, nome: nomeTemp } : p))
       setEditandoId(null)
     }
     setSalvando(false)
+  }
+
+  async function toggleAtivo(id: number, ativo: boolean) {
+    await supabase.from('produtos').update({ ativo: !ativo }).eq('id', id)
+    setProdutos(prev => prev.map(p => p.id === id ? { ...p, ativo: !ativo } : p))
+  }
+
+  async function removerProduto(id: number) {
+    const { error } = await supabase.from('produtos').delete().eq('id', id)
+    if (!error) {
+      setProdutos(prev => prev.filter(p => p.id !== id))
+      setConfirmandoRemocao(null)
+    }
+  }
+
+  async function adicionarProduto() {
+    if (!novoProduto.nome || !novoProduto.preco) return
+    setSalvandoProduto(true)
+    const { data, error } = await supabase.from('produtos').insert({
+      nome: novoProduto.nome,
+      icone: novoProduto.icone,
+      resumo: novoProduto.resumo,
+      descricao: novoProduto.descricao,
+      preco: novoProduto.preco,
+      doses: novoProduto.doses || null,
+      tipo: novoProduto.tipo,
+      ativo: true,
+    }).select().single()
+    setSalvandoProduto(false)
+    if (!error && data) {
+      setProdutos(prev => [...prev, data].sort((a, b) => a.nome.localeCompare(b.nome)))
+      setModalNovoProduto(false)
+      setNovoProduto({ nome: '', icone: '💉', resumo: '', descricao: '', preco: '', doses: '', tipo: 'vacina' })
+      setTipoProduto(novoProduto.tipo)
+    }
   }
 
   async function registrarCarteirinha() {
@@ -138,10 +185,23 @@ export default function AdminPanel({ profile, onLogout }: Props) {
 
   const pendentes = agendamentos.filter(a => a.status === 'pendente').length
   const confirmados = agendamentos.filter(a => a.status === 'confirmado').length
+  const realizados = agendamentos.filter(a => a.status === 'realizado')
   const hoje = new Date().toISOString().split('T')[0]
   const agHoje = agendamentos.filter(a => a.data === hoje).length
   const proximos = agendamentos.filter(a => a.status !== 'cancelado').slice(0, 5)
   const produtosFiltrados = produtos.filter(p => p.tipo === tipoProduto)
+
+  const receitaRealizada = realizados.reduce((acc, ag) => {
+    const preco = parseFloat((ag.produto?.preco || '0').replace(',', '.'))
+    return acc + (isNaN(preco) ? 0 : preco)
+  }, 0)
+
+  const receitaPendente = agendamentos
+    .filter(a => a.status === 'confirmado' || a.status === 'pendente')
+    .reduce((acc, ag) => {
+      const preco = parseFloat((ag.produto?.preco || '0').replace(',', '.'))
+      return acc + (isNaN(preco) ? 0 : preco)
+    }, 0)
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', emoji: '📊' },
@@ -149,6 +209,8 @@ export default function AdminPanel({ profile, onLogout }: Props) {
     { id: 'produtos', label: 'Produtos', emoji: '✏️' },
     ...(podeVerFinanceiro ? [{ id: 'financeiro', label: 'Financeiro', emoji: '💰' }] : []),
   ] as { id: typeof aba; label: string; emoji: string }[]
+
+  const inp = { width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '14px', fontFamily: "'Montserrat', sans-serif", outline: 'none', boxSizing: 'border-box' as const, color: '#0e3d6b', background: 'white', marginBottom: '12px' }
 
   return (
     <div style={{ fontFamily: "'Montserrat', sans-serif", minHeight: '100vh', background: '#f0f4f8' }}>
@@ -169,21 +231,52 @@ export default function AdminPanel({ profile, onLogout }: Props) {
             ].map(f => (
               <div key={f.key} style={{ marginBottom: '14px' }}>
                 <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{f.label}</div>
-                <input
-                  value={(modal as any)[f.key]}
-                  onChange={e => setModal(prev => prev ? { ...prev, [f.key]: e.target.value } : null)}
-                  placeholder={f.placeholder}
-style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '14px', fontFamily: "'Montserrat', sans-serif", outline: 'none', boxSizing: 'border-box', color: '#0e3d6b', background: 'white' }}                />
+                <input value={(modal as any)[f.key]} onChange={e => setModal(prev => prev ? { ...prev, [f.key]: e.target.value } : null)} placeholder={f.placeholder}
+                  style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '14px', fontFamily: "'Montserrat', sans-serif", outline: 'none', boxSizing: 'border-box', color: '#0e3d6b', background: 'white' }} />
               </div>
             ))}
             <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-              <button onClick={() => setModal(null)}
-                style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'none', color: '#888', fontWeight: 600, fontSize: '14px', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
-                Cancelar
-              </button>
+              <button onClick={() => setModal(null)} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'none', color: '#888', fontWeight: 600, fontSize: '14px', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>Cancelar</button>
               <button onClick={registrarCarteirinha} disabled={!modal.dose || salvandoCarteirinha}
                 style={{ flex: 2, padding: '12px', borderRadius: '10px', border: 'none', background: !modal.dose ? '#cbd5e1' : 'linear-gradient(135deg, #1a5f9e, #2980b9)', color: 'white', fontWeight: 700, fontSize: '14px', cursor: !modal.dose ? 'not-allowed' : 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
                 {salvandoCarteirinha ? 'Salvando...' : '✓ Salvar na Carteirinha'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Novo Produto */}
+      {modalNovoProduto && (
+        <div onClick={() => setModalNovoProduto(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: '20px', padding: '28px', width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0e3d6b', marginBottom: '20px' }}>➕ Novo Produto</h3>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+              {(['vacina', 'injetavel', 'combo'] as const).map(t => (
+                <button key={t} onClick={() => setNovoProduto(p => ({ ...p, tipo: t }))}
+                  style={{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', background: novoProduto.tipo === t ? '#0e3d6b' : '#f0f4f8', color: novoProduto.tipo === t ? 'white' : '#64748b', fontWeight: 600, fontSize: '12px', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
+                  {t === 'vacina' ? '💉 Vacina' : t === 'injetavel' ? '✨ Injetável' : '🎁 Combo'}
+                </button>
+              ))}
+            </div>
+            {[
+              { label: 'Ícone (emoji) *', key: 'icone', placeholder: '💉' },
+              { label: 'Nome *', key: 'nome', placeholder: 'Nome do produto' },
+              { label: 'Resumo', key: 'resumo', placeholder: 'Frase curta de apresentação' },
+              { label: 'Descrição', key: 'descricao', placeholder: 'Descrição completa' },
+              { label: 'Preço à vista *', key: 'preco', placeholder: 'Ex: 95,00' },
+              { label: 'Doses / Esquema', key: 'doses', placeholder: 'Ex: 2 doses, Dose única' },
+            ].map(f => (
+              <div key={f.key}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{f.label}</div>
+                <input value={(novoProduto as any)[f.key]} onChange={e => setNovoProduto(p => ({ ...p, [f.key]: e.target.value }))} placeholder={f.placeholder} style={inp} />
+              </div>
+            ))}
+            <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+              <button onClick={() => setModalNovoProduto(false)} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'none', color: '#888', fontWeight: 600, fontSize: '14px', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>Cancelar</button>
+              <button onClick={adicionarProduto} disabled={!novoProduto.nome || !novoProduto.preco || salvandoProduto}
+                style={{ flex: 2, padding: '12px', borderRadius: '10px', border: 'none', background: (!novoProduto.nome || !novoProduto.preco) ? '#cbd5e1' : 'linear-gradient(135deg, #1a5f9e, #2980b9)', color: 'white', fontWeight: 700, fontSize: '14px', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
+                {salvandoProduto ? 'Salvando...' : '✓ Adicionar'}
               </button>
             </div>
           </div>
@@ -326,13 +419,16 @@ style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#1a2a3a', margin: 0 }}>Produtos</h2>
-              <span style={{ color: '#888', fontSize: '13px', fontWeight: 600 }}>{produtos.length} cadastrados</span>
+              <button onClick={() => setModalNovoProduto(true)}
+                style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #1a5f9e, #2980b9)', border: 'none', borderRadius: '10px', color: 'white', fontWeight: 700, fontSize: '13px', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
+                ➕ Novo Produto
+              </button>
             </div>
             <div style={{ display: 'flex', background: '#f0f4f8', borderRadius: '12px', padding: '4px', marginBottom: '20px', width: 'fit-content' }}>
-              {(['vacina', 'injetavel'] as const).map(t => (
+              {(['vacina', 'injetavel', 'combo'] as const).map(t => (
                 <button key={t} onClick={() => setTipoProduto(t)}
-                  style={{ padding: '8px 20px', borderRadius: '10px', border: 'none', background: tipoProduto === t ? 'white' : 'transparent', color: tipoProduto === t ? '#0e3d6b' : '#888', fontWeight: tipoProduto === t ? 700 : 500, fontSize: '13px', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif", boxShadow: tipoProduto === t ? '0 2px 8px rgba(0,0,0,0.08)' : 'none' }}>
-                  {t === 'vacina' ? '💉 Vacinas' : '✨ Injetáveis'}
+                  style={{ padding: '8px 16px', borderRadius: '10px', border: 'none', background: tipoProduto === t ? 'white' : 'transparent', color: tipoProduto === t ? '#0e3d6b' : '#888', fontWeight: tipoProduto === t ? 700 : 500, fontSize: '13px', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif", boxShadow: tipoProduto === t ? '0 2px 8px rgba(0,0,0,0.08)' : 'none' }}>
+                  {t === 'vacina' ? '💉 Vacinas' : t === 'injetavel' ? '✨ Injetáveis' : '🎁 Combos'}
                 </button>
               ))}
             </div>
@@ -341,34 +437,72 @@ style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px
             ) : (
               <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
                 {produtosFiltrados.map((p, i) => (
-                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', padding: '16px 20px', borderBottom: i < produtosFiltrados.length - 1 ? '1px solid #f0f4f8' : 'none' }}>
-                    <div style={{ fontSize: '26px', marginRight: '14px' }}>{p.icone}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, color: '#1a2a3a', fontSize: '14px' }}>{p.nome}</div>
-                      {p.doses && <div style={{ color: '#888', fontSize: '12px', marginTop: '2px' }}>{p.doses}</div>}
-                      {editandoId === p.id ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
-                          <input value={precoTemp} onChange={e => setPrecoTemp(e.target.value)} autoFocus
-                            style={{ padding: '6px 10px', borderRadius: '8px', border: '2px solid #1a5f9e', fontSize: '13px', fontFamily: "'Montserrat', sans-serif", width: '160px', outline: 'none', color: '#0e3d6b' }} />
-                          <button onClick={() => salvarPreco(p.id)} disabled={salvando}
-                            style={{ padding: '6px 14px', background: '#1a5f9e', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
-                            {salvando ? '...' : 'Salvar'}
+                  <div key={p.id} style={{ padding: '16px 20px', borderBottom: i < produtosFiltrados.length - 1 ? '1px solid #f0f4f8' : 'none', opacity: p.ativo ? 1 : 0.5 }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <div style={{ fontSize: '26px', marginRight: '14px' }}>{p.icone}</div>
+                      <div style={{ flex: 1 }}>
+                        {editandoId === p.id ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <input value={nomeTemp} onChange={e => setNomeTemp(e.target.value)} placeholder="Nome"
+                              style={{ padding: '6px 10px', borderRadius: '8px', border: '2px solid #1a5f9e', fontSize: '14px', fontFamily: "'Montserrat', sans-serif", outline: 'none', color: '#0e3d6b', fontWeight: 700 }} />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '12px', color: '#64748b' }}>R$</span>
+                              <input value={precoTemp} onChange={e => setPrecoTemp(e.target.value)} placeholder="Preço"
+                                style={{ padding: '6px 10px', borderRadius: '8px', border: '2px solid #1a5f9e', fontSize: '13px', fontFamily: "'Montserrat', sans-serif', width: '120px", outline: 'none', color: '#0e3d6b' }} />
+                              <button onClick={() => salvarEdicao(p.id)} disabled={salvando}
+                                style={{ padding: '6px 14px', background: '#1a5f9e', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
+                                {salvando ? '...' : 'Salvar'}
+                              </button>
+                              <button onClick={() => setEditandoId(null)}
+                                style={{ padding: '6px 14px', background: '#f0f4f8', color: '#666', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>Cancelar</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div style={{ fontWeight: 700, color: '#1a2a3a', fontSize: '14px' }}>{p.nome}</div>
+                            {p.doses && <div style={{ color: '#888', fontSize: '12px', marginTop: '2px' }}>{p.doses}</div>}
+                            <div style={{ color: '#1a5f9e', fontWeight: 700, fontSize: '13px', marginTop: '4px' }}>R$ {p.preco}</div>
+                          </>
+                        )}
+                      </div>
+                      {editandoId !== p.id && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {/* Toggle ativo */}
+                          <button onClick={() => toggleAtivo(p.id, p.ativo)}
+                            style={{ padding: '5px 12px', borderRadius: '20px', border: 'none', background: p.ativo ? '#e8f5e9' : '#ffebee', color: p.ativo ? '#2e7d32' : '#c62828', fontSize: '11px', fontWeight: 700, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
+                            {p.ativo ? '✓ Ativo' : '○ Inativo'}
                           </button>
-                          <button onClick={() => setEditandoId(null)}
-                            style={{ padding: '6px 14px', background: '#f0f4f8', color: '#666', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>Cancelar</button>
+                          {/* Editar */}
+                          <button onClick={() => { setEditandoId(p.id); setPrecoTemp(p.preco); setNomeTemp(p.nome) }}
+                            style={{ padding: '6px 12px', background: '#f0f4f8', border: 'none', borderRadius: '8px', color: '#0e3d6b', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
+                            ✏️
+                          </button>
+                          {/* Remover */}
+                          {confirmandoRemocao === p.id ? (
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              <button onClick={() => removerProduto(p.id)}
+                                style={{ padding: '6px 10px', background: '#ffebee', border: 'none', borderRadius: '8px', color: '#c62828', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
+                                Confirmar
+                              </button>
+                              <button onClick={() => setConfirmandoRemocao(null)}
+                                style={{ padding: '6px 10px', background: '#f0f4f8', border: 'none', borderRadius: '8px', color: '#888', fontSize: '12px', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
+                                ✗
+                              </button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setConfirmandoRemocao(p.id)}
+                              style={{ padding: '6px 10px', background: '#ffebee', border: 'none', borderRadius: '8px', color: '#c62828', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
+                              🗑️
+                            </button>
+                          )}
                         </div>
-                      ) : (
-                        <div style={{ color: '#1a5f9e', fontWeight: 700, fontSize: '13px', marginTop: '4px' }}>R$ {p.preco}</div>
                       )}
                     </div>
-                    {editandoId !== p.id && (
-                      <button onClick={() => { setEditandoId(p.id); setPrecoTemp(p.preco) }}
-                        style={{ padding: '6px 12px', background: '#f0f4f8', border: 'none', borderRadius: '8px', color: '#0e3d6b', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
-                        ✏️ Editar preço
-                      </button>
-                    )}
                   </div>
                 ))}
+                {produtosFiltrados.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Nenhum produto nesta categoria</div>
+                )}
               </div>
             )}
           </div>
@@ -404,18 +538,35 @@ style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px
                   🔒 Bloquear
                 </button>
               </div>
-              <div style={{ background: 'linear-gradient(135deg, #0e3d6b, #1a5f9e)', borderRadius: '20px', padding: '28px', marginBottom: '20px', color: 'white' }}>
-                <div style={{ fontSize: '13px', opacity: 0.7, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Total de Agendamentos</div>
-                <div style={{ fontSize: '40px', fontWeight: 800, marginBottom: '6px' }}>{agendamentos.length}</div>
-                <div style={{ opacity: 0.7, fontSize: '14px' }}>
-                  {confirmados} confirmados · {pendentes} pendentes · {agendamentos.filter(a => a.status === 'realizado').length} realizados
+
+              {/* Receita realizada */}
+              <div style={{ background: 'linear-gradient(135deg, #0e3d6b, #1a5f9e)', borderRadius: '20px', padding: '28px', marginBottom: '16px', color: 'white', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '150px', height: '150px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+                <div style={{ fontSize: '13px', opacity: 0.7, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Receita Realizada</div>
+                <div style={{ fontSize: '40px', fontWeight: 800, marginBottom: '6px' }}>
+                  R$ {receitaRealizada.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </div>
+                <div style={{ opacity: 0.7, fontSize: '14px' }}>{realizados.length} procedimentos realizados</div>
               </div>
+
+              {/* Receita potencial */}
+              <div style={{ background: 'white', borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: '13px', color: '#888', marginBottom: '4px' }}>Receita Potencial</div>
+                  <div style={{ fontSize: '24px', fontWeight: 800, color: '#e65100' }}>
+                    R$ {receitaPendente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>Confirmados + Pendentes</div>
+                </div>
+                <div style={{ fontSize: '36px' }}>⏳</div>
+              </div>
+
+              {/* Cards status */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
                 {[
                   { label: 'Confirmados', value: confirmados, color: '#1565c0', bg: '#e3f2fd', emoji: '✅' },
                   { label: 'Pendentes', value: pendentes, color: '#e65100', bg: '#fff3e0', emoji: '⏳' },
-                  { label: 'Realizados', value: agendamentos.filter(a => a.status === 'realizado').length, color: '#2e7d32', bg: '#e8f5e9', emoji: '💉' },
+                  { label: 'Realizados', value: realizados.length, color: '#2e7d32', bg: '#e8f5e9', emoji: '💉' },
                   { label: 'Cancelados', value: agendamentos.filter(a => a.status === 'cancelado').length, color: '#c62828', bg: '#ffebee', emoji: '✗' },
                 ].map(c => (
                   <div key={c.label} style={{ background: c.bg, borderRadius: '16px', padding: '20px', textAlign: 'center' }}>
@@ -425,9 +576,6 @@ style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px
                   </div>
                 ))}
               </div>
-              <p style={{ color: '#888', fontSize: '12px', marginTop: '20px', textAlign: 'center' }}>
-                Relatório financeiro completo com valores será habilitado após configuração de preços.
-              </p>
             </div>
           )
         )}
