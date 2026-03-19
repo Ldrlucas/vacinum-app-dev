@@ -13,6 +13,9 @@ interface AgendamentoAdmin {
   horario: string
   status: string
   observacoes: string | null
+  paciente_id: string
+  produto_id: number
+  unidade_id: number
   paciente: { nome: string } | null
   produto: { nome: string; icone: string } | null
   unidade: { nome: string; cidade: string } | null
@@ -26,6 +29,14 @@ interface Produto {
   doses: string | null
   tipo: string
   ativo: boolean
+}
+
+interface ModalCarteirinha {
+  agendamento: AgendamentoAdmin
+  dose: string
+  lote: string
+  profissional: string
+  proxima_dose: string
 }
 
 const STATUS_STYLE: Record<string, { label: string; color: string; bg: string }> = {
@@ -50,6 +61,10 @@ export default function AdminPanel({ profile, onLogout }: Props) {
   const [pinDesbloqueado, setPinDesbloqueado] = useState(false)
   const [pinInput, setPinInput] = useState('')
   const [pinErro, setPinErro] = useState(false)
+  const [modal, setModal] = useState<ModalCarteirinha | null>(null)
+  const [salvandoCarteirinha, setSalvandoCarteirinha] = useState(false)
+  const [sucessoCarteirinha, setSucessoCarteirinha] = useState<number | null>(null)
+
   useEffect(() => {
     carregarAgendamentos()
     carregarProdutos()
@@ -60,7 +75,7 @@ export default function AdminPanel({ profile, onLogout }: Props) {
     const { data, error } = await supabase
       .from('agendamentos')
       .select(`
-        id, data, horario, status, observacoes,
+        id, data, horario, status, observacoes, paciente_id, produto_id, unidade_id,
         paciente:profiles!agendamentos_paciente_id_fkey(nome),
         produto:produtos!agendamentos_produto_id_fkey(nome, icone),
         unidade:unidades!agendamentos_unidade_id_fkey(nome, cidade)
@@ -95,6 +110,26 @@ export default function AdminPanel({ profile, onLogout }: Props) {
     setSalvando(false)
   }
 
+  async function registrarCarteirinha() {
+    if (!modal) return
+    setSalvandoCarteirinha(true)
+    const { error } = await supabase.from('carteirinha').insert({
+      paciente_id: modal.agendamento.paciente_id,
+      produto_id: modal.agendamento.produto_id,
+      data_aplicacao: modal.agendamento.data,
+      dose: modal.dose,
+      lote: modal.lote || null,
+      profissional: modal.profissional || null,
+      proxima_dose: modal.proxima_dose || null,
+    })
+    setSalvandoCarteirinha(false)
+    if (!error) {
+      setSucessoCarteirinha(modal.agendamento.id)
+      setModal(null)
+      setTimeout(() => setSucessoCarteirinha(null), 3000)
+    }
+  }
+
   function verificarPin() {
     const pinCorreto = profile.pin_financeiro || '1234'
     if (pinInput === pinCorreto) { setPinDesbloqueado(true); setPinErro(false) }
@@ -117,6 +152,44 @@ export default function AdminPanel({ profile, onLogout }: Props) {
 
   return (
     <div style={{ fontFamily: "'Montserrat', sans-serif", minHeight: '100vh', background: '#f0f4f8' }}>
+
+      {/* Modal Carteirinha */}
+      {modal && (
+        <div onClick={() => setModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: '20px', padding: '28px', width: '100%', maxWidth: '440px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0e3d6b', marginBottom: '6px' }}>📋 Registrar na Carteirinha</h3>
+            <p style={{ color: '#888', fontSize: '13px', marginBottom: '20px' }}>
+              {modal.agendamento.produto?.icone} {modal.agendamento.produto?.nome} · {modal.agendamento.paciente?.nome}
+            </p>
+            {[
+              { label: 'Dose *', key: 'dose', placeholder: 'Ex: 1ª dose, Dose única, Reforço' },
+              { label: 'Lote', key: 'lote', placeholder: 'Ex: FAB2024-001' },
+              { label: 'Profissional', key: 'profissional', placeholder: 'Nome do aplicador' },
+              { label: 'Próxima dose', key: 'proxima_dose', placeholder: 'Ex: Abril 2026 (opcional)' },
+            ].map(f => (
+              <div key={f.key} style={{ marginBottom: '14px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{f.label}</div>
+                <input
+                  value={(modal as any)[f.key]}
+                  onChange={e => setModal(prev => prev ? { ...prev, [f.key]: e.target.value } : null)}
+                  placeholder={f.placeholder}
+                  style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '14px', fontFamily: "'Montserrat', sans-serif", outline: 'none', boxSizing: 'border-box', color: '#0e3d6b' }}
+                />
+              </div>
+            ))}
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+              <button onClick={() => setModal(null)}
+                style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'none', color: '#888', fontWeight: 600, fontSize: '14px', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
+                Cancelar
+              </button>
+              <button onClick={registrarCarteirinha} disabled={!modal.dose || salvandoCarteirinha}
+                style={{ flex: 2, padding: '12px', borderRadius: '10px', border: 'none', background: !modal.dose ? '#cbd5e1' : 'linear-gradient(135deg, #1a5f9e, #2980b9)', color: 'white', fontWeight: 700, fontSize: '14px', cursor: !modal.dose ? 'not-allowed' : 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
+                {salvandoCarteirinha ? 'Salvando...' : '✓ Salvar na Carteirinha'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #0e3d6b, #1a5f9e)', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
@@ -211,21 +284,36 @@ export default function AdminPanel({ profile, onLogout }: Props) {
               <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
                 {agendamentos.map((ag, i) => {
                   const st = STATUS_STYLE[ag.status] || STATUS_STYLE.pendente
+                  const registrado = sucessoCarteirinha === ag.id
                   return (
-                    <div key={ag.id} style={{ display: 'flex', alignItems: 'center', padding: '16px 20px', borderBottom: i < agendamentos.length - 1 ? '1px solid #f0f4f8' : 'none' }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 700, color: '#1a2a3a', fontSize: '14px' }}>{ag.paciente?.nome || '—'}</div>
-                        <div style={{ color: '#888', fontSize: '12px', marginTop: '3px' }}>
-                          {ag.produto?.icone} {ag.produto?.nome} · {new Date(ag.data + 'T00:00:00').toLocaleDateString('pt-BR')} {ag.horario} · {ag.unidade?.cidade}
+                    <div key={ag.id} style={{ padding: '16px 20px', borderBottom: i < agendamentos.length - 1 ? '1px solid #f0f4f8' : 'none' }}>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 700, color: '#1a2a3a', fontSize: '14px' }}>{ag.paciente?.nome || '—'}</div>
+                          <div style={{ color: '#888', fontSize: '12px', marginTop: '3px' }}>
+                            {ag.produto?.icone} {ag.produto?.nome} · {new Date(ag.data + 'T00:00:00').toLocaleDateString('pt-BR')} {ag.horario} · {ag.unidade?.cidade}
+                          </div>
                         </div>
+                        <select value={ag.status} onChange={e => atualizarStatus(ag.id, e.target.value)}
+                          style={{ fontSize: '12px', fontWeight: 700, padding: '6px 10px', borderRadius: '20px', border: 'none', background: st.bg, color: st.color, fontFamily: "'Montserrat', sans-serif", cursor: 'pointer' }}>
+                          <option value="pendente">Pendente</option>
+                          <option value="confirmado">Confirmado</option>
+                          <option value="realizado">Realizado</option>
+                          <option value="cancelado">Cancelado</option>
+                        </select>
                       </div>
-                      <select value={ag.status} onChange={e => atualizarStatus(ag.id, e.target.value)}
-                        style={{ fontSize: '12px', fontWeight: 700, padding: '6px 10px', borderRadius: '20px', border: 'none', background: st.bg, color: st.color, fontFamily: "'Montserrat', sans-serif", cursor: 'pointer' }}>
-                        <option value="pendente">Pendente</option>
-                        <option value="confirmado">Confirmado</option>
-                        <option value="realizado">Realizado</option>
-                        <option value="cancelado">Cancelado</option>
-                      </select>
+                      {ag.status === 'realizado' && (
+                        <div style={{ marginTop: '10px' }}>
+                          {registrado ? (
+                            <span style={{ fontSize: '12px', color: '#2e7d32', fontWeight: 700 }}>✓ Registrado na carteirinha</span>
+                          ) : (
+                            <button onClick={() => setModal({ agendamento: ag, dose: '', lote: '', profissional: '', proxima_dose: '' })}
+                              style={{ padding: '7px 14px', background: '#e8f5e9', border: 'none', borderRadius: '8px', color: '#2e7d32', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
+                              📋 Registrar na Carteirinha
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )
                 })}
@@ -239,9 +327,7 @@ export default function AdminPanel({ profile, onLogout }: Props) {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#1a2a3a', margin: 0 }}>Produtos</h2>
-              <span style={{ color: '#888', fontSize: '13px', fontWeight: 600 }}>
-                {produtos.length} cadastrados
-              </span>
+              <span style={{ color: '#888', fontSize: '13px', fontWeight: 600 }}>{produtos.length} cadastrados</span>
             </div>
             <div style={{ display: 'flex', background: '#f0f4f8', borderRadius: '12px', padding: '4px', marginBottom: '20px', width: 'fit-content' }}>
               {(['vacina', 'injetavel'] as const).map(t => (
@@ -301,7 +387,7 @@ export default function AdminPanel({ profile, onLogout }: Props) {
                   onChange={e => setPinInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && verificarPin()}
                   placeholder="• • • •"
-                  style={{ textAlign: 'center', fontSize: '28px', letterSpacing: '10px', padding: '14px', border: `2px solid ${pinErro ? '#f44336' : '#e0e8f0'}`, borderRadius: '14px', width: '160px', outline: 'none', fontFamily: "'Montserrat', sans-serif', colorScheme: 'light'" }} />
+                  style={{ textAlign: 'center', fontSize: '28px', letterSpacing: '10px', padding: '14px', border: `2px solid ${pinErro ? '#f44336' : '#e0e8f0'}`, borderRadius: '14px', width: '160px', outline: 'none', fontFamily: "'Montserrat', sans-serif", colorScheme: 'light' }} />
                 {pinErro && <p style={{ color: '#f44336', fontSize: '13px', marginTop: '10px' }}>PIN incorreto</p>}
                 <br />
                 <button onClick={verificarPin}
