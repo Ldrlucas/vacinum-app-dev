@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from './hooks/useAuth'
+import { supabase } from './supabase'
 import type { Produto, Unidade } from './supabase'
 import LoginPage from './pages/LoginPage'
 import UnidadePage from './pages/UnidadePage'
@@ -10,6 +11,8 @@ import MeusAgendamentosTab from './pages/MeusAgendamentosTab'
 import AdminPanel from './pages/AdminPanel'
 
 type Aba = 'vacinas' | 'agendamentos' | 'carteirinha' | 'assistente'
+
+const VAPID_PUBLIC_KEY = 'BB-fJ3DGgJOu1Yv7J8uXAUUAZ7dqBVLQIZEbPcGo6IAO4WYrnGQeX_OajkRi9ri1mbiRc_IqSDZwEwTYojfyMQA'
 
 const RESPOSTAS: Record<string, string> = {
   'febre amarela': 'A vacina de Febre Amarela oferece proteção vitalícia com dose única. Temos disponibilidade essa semana! 🌡️',
@@ -28,6 +31,13 @@ function encontrarResposta(texto: string) {
   return 'Para informações mais específicas, nossa equipe está disponível de segunda a sexta das 8h às 18h. O que mais posso ajudar? 😊'
 }
 
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = window.atob(base64)
+  return new Uint8Array([...rawData].map(char => char.charCodeAt(0)))
+}
+
 export default function App() {
   const { user, profile, loading, signIn, signUp, signOut } = useAuth()
   const [unidade, setUnidade] = useState<Unidade | null>(null)
@@ -39,6 +49,7 @@ export default function App() {
   ])
   const [inputChat, setInputChat] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
+  const [showPushModal, setShowPushModal] = useState(false)
 
   useEffect(() => {
     const link = document.createElement('link')
@@ -46,6 +57,54 @@ export default function App() {
     link.rel = 'stylesheet'
     document.head.appendChild(link)
   }, [])
+
+  // Verifica se deve mostrar modal de push após login
+  useEffect(() => {
+    if (!user || !profile) return
+    if (profile.tipo !== 'paciente') return
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) return
+    if (Notification.permission === 'granted') {
+      // Já tem permissão, garante que a subscription está salva
+      salvarSubscription()
+      return
+    }
+    if (Notification.permission === 'denied') return
+    // Mostra modal apenas se nunca perguntou antes
+    const jaPerguintou = localStorage.getItem(`push_asked_${user.id}`)
+    if (!jaPerguintou) {
+      setTimeout(() => setShowPushModal(true), 2000)
+    }
+  }, [user, profile])
+
+  async function salvarSubscription() {
+    try {
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      })
+      await supabase.from('push_subscriptions').upsert({
+        paciente_id: user!.id,
+        subscription: sub.toJSON()
+      }, { onConflict: 'paciente_id' })
+    } catch (err) {
+      console.error('Erro ao salvar subscription:', err)
+    }
+  }
+
+  async function pedirPermissaoPush() {
+    localStorage.setItem(`push_asked_${user!.id}`, '1')
+    setShowPushModal(false)
+    const permission = await Notification.requestPermission()
+    if (permission === 'granted') {
+      await salvarSubscription()
+    }
+  }
+
+  function recusarPush() {
+    localStorage.setItem(`push_asked_${user!.id}`, '1')
+    setShowPushModal(false)
+  }
 
   async function enviarChat(texto?: string) {
     const msg = texto || inputChat
@@ -113,11 +172,32 @@ export default function App() {
   return (
     <div style={{ fontFamily: "'Montserrat', sans-serif", minHeight: '100vh', width: '100%', background: 'linear-gradient(135deg, #0a2540 0%, #0e3d6b 40%, #1a5f9e 100%)', display: 'flex', alignItems: 'stretch', flexDirection: 'row' }}>
 
-      {/* Lateral esquerda — só desktop, vazia */}
+      {/* Lateral esquerda */}
       <div className="desktop-sidebar" style={{ flex: 1 }} />
 
       {/* App mobile centralizado */}
       <div style={{ width: '100%', maxWidth: '480px', minHeight: '100vh', overflowY: 'scroll', background: '#f0f4f8', position: 'relative', flexShrink: 0, boxShadow: '0 0 60px rgba(0,0,0,0.3)' }}>
+
+        {/* Modal de permissão push */}
+        {showPushModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+            <div style={{ background: 'white', borderRadius: '24px 24px 0 0', padding: '28px 24px 36px', width: '100%', maxWidth: '480px', textAlign: 'center' }}>
+              <div style={{ fontSize: '48px', marginBottom: '12px' }}>🔔</div>
+              <div style={{ fontWeight: 800, fontSize: '18px', color: '#0e3d6b', marginBottom: '10px' }}>Ativar lembretes de vacina?</div>
+              <div style={{ color: '#64748b', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
+                Receba notificações quando suas vacinas estiverem próximas do vencimento. Você pode desativar a qualquer momento.
+              </div>
+              <button onClick={pedirPermissaoPush}
+                style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #0e3d6b, #1a5f9e)', color: 'white', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: 700, fontFamily: "'Montserrat', sans-serif", cursor: 'pointer', marginBottom: '10px' }}>
+                Ativar notificações
+              </button>
+              <button onClick={recusarPush}
+                style={{ width: '100%', padding: '12px', background: 'transparent', color: '#94a3b8', border: 'none', fontSize: '14px', fontFamily: "'Montserrat', sans-serif", cursor: 'pointer' }}>
+                Agora não
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Header */}
         <div style={{ background: 'linear-gradient(135deg, #0e3d6b, #1a5f9e)', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 200 }}>
@@ -216,7 +296,7 @@ export default function App() {
 
       </div>
 
-      {/* Lateral direita — só desktop, vazia */}
+      {/* Lateral direita */}
       <div className="desktop-sidebar" style={{ flex: 1 }} />
 
     </div>
