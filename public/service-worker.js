@@ -4,7 +4,6 @@ const urlsToCache = [
   '/index.html'
 ]
 
-// Instala e faz cache dos recursos essenciais
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
@@ -12,7 +11,6 @@ self.addEventListener('install', event => {
   self.skipWaiting()
 })
 
-// Ativa e limpa caches antigos
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -24,16 +22,13 @@ self.addEventListener('activate', event => {
   self.clients.claim()
 })
 
-// Estratégia: network first, cache como fallback
 self.addEventListener('fetch', event => {
-  // Ignora requisições não-GET e chamadas ao Supabase (sempre precisa de dados frescos)
   if (event.request.method !== 'GET') return
   if (event.request.url.includes('supabase.co')) return
 
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Atualiza o cache com a resposta mais recente
         if (response && response.status === 200) {
           const responseClone = response.clone()
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone))
@@ -44,9 +39,13 @@ self.addEventListener('fetch', event => {
   )
 })
 
-// Recebe push notifications
 self.addEventListener('push', event => {
-  const data = event.data ? event.data.json() : {}
+  let data = {}
+  try {
+    data = event.data ? event.data.json() : {}
+  } catch {
+    data = { title: 'Vacinum', body: event.data ? event.data.text() : 'Você tem uma notificação.' }
+  }
   const title = data.title || 'Vacinum'
   const options = {
     body: data.body || 'Você tem uma notificação.',
@@ -57,7 +56,6 @@ self.addEventListener('push', event => {
   event.waitUntil(self.registration.showNotification(title, options))
 })
 
-// Abre o app ao clicar na notificação
 self.addEventListener('notificationclick', event => {
   event.notification.close()
   event.waitUntil(
