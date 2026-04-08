@@ -62,7 +62,6 @@ export default function App() {
     if (!user || !profile || profile.tipo !== 'paciente') return
     if (!('Notification' in window)) return
     if (Notification.permission === 'granted') {
-      setNotifAtivada(true)
       salvarSubscription()
     }
   }, [user, profile])
@@ -74,11 +73,16 @@ export default function App() {
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
       })
-      await supabase.from('push_subscriptions').upsert({
+      const { error } = await supabase.from('push_subscriptions').upsert({
         paciente_id: user!.id,
         subscription: sub.toJSON()
       }, { onConflict: 'paciente_id' })
-      setNotifAtivada(true)
+
+      if (!error) {
+        setNotifAtivada(true)
+      } else {
+        console.error('Erro ao salvar subscription no Supabase:', error)
+      }
     } catch (err) {
       console.error('Erro ao salvar subscription:', err)
     }
