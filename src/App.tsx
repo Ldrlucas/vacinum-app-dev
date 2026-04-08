@@ -49,7 +49,7 @@ export default function App() {
   ])
   const [inputChat, setInputChat] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
-  const [showPushModal, setShowPushModal] = useState(false)
+  const [notifAtivada, setNotifAtivada] = useState(false)
 
   useEffect(() => {
     const link = document.createElement('link')
@@ -58,21 +58,12 @@ export default function App() {
     document.head.appendChild(link)
   }, [])
 
-  // Verifica se deve mostrar modal de push após login
   useEffect(() => {
-    if (!user || !profile) return
-    if (profile.tipo !== 'paciente') return
-    if (!('Notification' in window) || !('serviceWorker' in navigator)) return
+    if (!user || !profile || profile.tipo !== 'paciente') return
+    if (!('Notification' in window)) return
     if (Notification.permission === 'granted') {
-      // Já tem permissão, garante que a subscription está salva
+      setNotifAtivada(true)
       salvarSubscription()
-      return
-    }
-    if (Notification.permission === 'denied') return
-    // Mostra modal apenas se nunca perguntou antes
-    const jaPerguintou = localStorage.getItem(`push_asked_${user.id}`)
-    if (!jaPerguintou) {
-      setTimeout(() => setShowPushModal(true), 2000)
     }
   }, [user, profile])
 
@@ -87,23 +78,21 @@ export default function App() {
         paciente_id: user!.id,
         subscription: sub.toJSON()
       }, { onConflict: 'paciente_id' })
+      setNotifAtivada(true)
     } catch (err) {
       console.error('Erro ao salvar subscription:', err)
     }
   }
 
-  async function pedirPermissaoPush() {
-    localStorage.setItem(`push_asked_${user!.id}`, '1')
-    setShowPushModal(false)
+  async function ativarNotificacoes() {
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      alert('Seu navegador não suporta notificações.')
+      return
+    }
     const permission = await Notification.requestPermission()
     if (permission === 'granted') {
       await salvarSubscription()
     }
-  }
-
-  function recusarPush() {
-    localStorage.setItem(`push_asked_${user!.id}`, '1')
-    setShowPushModal(false)
   }
 
   async function enviarChat(texto?: string) {
@@ -172,32 +161,9 @@ export default function App() {
   return (
     <div style={{ fontFamily: "'Montserrat', sans-serif", minHeight: '100vh', width: '100%', background: 'linear-gradient(135deg, #0a2540 0%, #0e3d6b 40%, #1a5f9e 100%)', display: 'flex', alignItems: 'stretch', flexDirection: 'row' }}>
 
-      {/* Lateral esquerda */}
       <div className="desktop-sidebar" style={{ flex: 1 }} />
 
-      {/* App mobile centralizado */}
       <div style={{ width: '100%', maxWidth: '480px', minHeight: '100vh', overflowY: 'scroll', background: '#f0f4f8', position: 'relative', flexShrink: 0, boxShadow: '0 0 60px rgba(0,0,0,0.3)' }}>
-
-        {/* Modal de permissão push */}
-        {showPushModal && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-            <div style={{ background: 'white', borderRadius: '24px 24px 0 0', padding: '28px 24px 36px', width: '100%', maxWidth: '480px', textAlign: 'center' }}>
-              <div style={{ fontSize: '48px', marginBottom: '12px' }}>🔔</div>
-              <div style={{ fontWeight: 800, fontSize: '18px', color: '#0e3d6b', marginBottom: '10px' }}>Ativar lembretes de vacina?</div>
-              <div style={{ color: '#64748b', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
-                Receba notificações quando suas vacinas estiverem próximas do vencimento. Você pode desativar a qualquer momento.
-              </div>
-              <button onClick={pedirPermissaoPush}
-                style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #0e3d6b, #1a5f9e)', color: 'white', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: 700, fontFamily: "'Montserrat', sans-serif", cursor: 'pointer', marginBottom: '10px' }}>
-                Ativar notificações
-              </button>
-              <button onClick={recusarPush}
-                style={{ width: '100%', padding: '12px', background: 'transparent', color: '#94a3b8', border: 'none', fontSize: '14px', fontFamily: "'Montserrat', sans-serif", cursor: 'pointer' }}>
-                Agora não
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Header */}
         <div style={{ background: 'linear-gradient(135deg, #0e3d6b, #1a5f9e)', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 200 }}>
@@ -211,13 +177,20 @@ export default function App() {
               <div style={{ fontWeight: 400, fontSize: '8px', color: 'rgba(255,255,255,0.65)', letterSpacing: '2px' }}>CLÍNICA DE VACINAS</div>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button onClick={() => setUnidade(null)}
               style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '20px', padding: '6px 14px', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
               <span style={{ fontSize: '11px' }}>📍</span>
               <span style={{ color: 'white', fontSize: '12px', fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}>{unidade.cidade}</span>
               <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>▾</span>
             </button>
+            {!notifAtivada && 'Notification' in window && Notification.permission !== 'denied' && (
+              <button onClick={ativarNotificacoes}
+                style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', color: 'white', padding: '6px 10px', cursor: 'pointer', fontSize: '16px' }}
+                title="Ativar notificações">
+                🔔
+              </button>
+            )}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '14px' }}>
                 {profile.nome.charAt(0).toUpperCase()}
@@ -296,7 +269,6 @@ export default function App() {
 
       </div>
 
-      {/* Lateral direita */}
       <div className="desktop-sidebar" style={{ flex: 1 }} />
 
     </div>
