@@ -12,7 +12,7 @@ import AdminPanel from './pages/AdminPanel'
 
 type Aba = 'vacinas' | 'agendamentos' | 'carteirinha' | 'assistente'
 
-const VAPID_PUBLIC_KEY = 'BHiSUbxw_AFtBF8c0A3BKM0At2Y08fY4ayCDmiS-bUxDUcXfWlXc__t3T2vrjtfvkP97E4MEnBXNBspsj7XfHkc'
+const VAPID_PUBLIC_KEY = 'gMsLkScTrnotHFw8FLf4L40FhCXCLRVuy4s83ZI0IZK7zK5vFYDVeddkh_abmBGbkD4cN1ugaE1iw5BSIogcBQ'
 
 const RESPOSTAS: Record<string, string> = {
   'febre amarela': 'A vacina de Febre Amarela oferece proteção vitalícia com dose única. Temos disponibilidade essa semana! 🌡️',
